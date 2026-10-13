@@ -5,20 +5,46 @@ edition = "2021"
 description = "Geodesic linear referencing + scoped-rule resolver for Overture Maps transportation segments (GERS)"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = ["native"]
+# CLI, Parquet reader and HTTP server.
+native = ["dep:axum", "dep:base64", "dep:clap", "dep:flate2", "dep:geozero", "dep:parquet", "dep:tokio"]
+# Browser build: `cargo build --lib --target wasm32-unknown-unknown --no-default-features --features wasm`.
+wasm = ["dep:wasm-bindgen"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "gers-lr"
+path = "src/main.rs"
+required-features = ["native"]
+
 [dependencies]
 anyhow = "1"
-axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio"] }
-base64 = "0.23"
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio"], optional = true }
+base64 = { version = "0.23", optional = true }
 chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
+flate2 = { version = "1", optional = true }
 geo = "0.33"
-geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"] }
+geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"], optional = true }
 opening-hours = "2"
-parquet = { version = "60", default-features = false, features = ["json", "zstd", "snap", "base64"] }
+parquet = { version = "60", default-features = false, features = ["json", "zstd", "snap", "base64"], optional = true }
+rmp-serde = "1"
 rstar = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "net"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net"], optional = true }
+wasm-bindgen = { version = "=0.2.123", optional = true }
 
 [profile.release]
 opt-level = 3
+
+# Browser build: smaller and faster to download; `scripts/build-web.sh` uses it.
+[profile.wasm-release]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

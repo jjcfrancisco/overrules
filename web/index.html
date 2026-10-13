@@ -6,7 +6,7 @@
 <title>gers-lr · Seville</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="map"></div>
@@ -67,10 +67,12 @@
   <footer>
     All scopes must hold (AND) · the last matching rule wins · otherwise the property default.
     Fractions are geodesic on WGS84, as Overture defines them.
+    <div class="backend" id="backend"></div>
   </footer>
 </aside>
 
 <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
-<script src="/app.js"></script>
+<script src="backend.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

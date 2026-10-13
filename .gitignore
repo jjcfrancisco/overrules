@@ -1,3 +1,4 @@
 /target
 /data/seville/*.parquet
 /data/seville/*.log
+/dist

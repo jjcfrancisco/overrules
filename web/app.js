@@ -27,6 +27,13 @@ const fmt = (n, d = 1) => Number(n).toFixed(d);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const empty = () => ({ type: 'FeatureCollection', features: [] });
 
+/* ---------- backend ---------- */
+// HTTP API when served by `gers-lr serve`, otherwise the resolver as WebAssembly (see backend.js).
+const backend = GersBackend.detect((msg) => { $('#subtitle').textContent = msg; })
+  .then((b) => { $('#backend').textContent = b.label; return b; })
+  .catch((e) => { showError(`The resolver could not start: ${e.message}`); throw e; });
+const api = async (call, arg) => (await backend)[call](arg);
+
 /* ---------- map ---------- */
 // Embedded webviews can report the document as hidden, which pauses requestAnimationFrame
 // and stalls MapLibre before its first frame. Fall back to a timer while hidden.
@@ -46,7 +53,7 @@ function initMap() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
   map.on('load', async () => {
-    const net = await (await fetch('/api/network')).json();
+    const net = await api('network');
     map.addSource('net', { type: 'geojson', data: net, promoteId: 'id' });
     map.addLayer({
       id: 'net', type: 'line', source: 'net',
@@ -114,7 +121,7 @@ function initMap() {
       map.on('mouseleave', k, () => { tip.hidden = true; });
     }
 
-    const s = await (await fetch('/api/stats')).json();
+    const s = await api('stats');
     $('#subtitle').textContent = `Seville · ${s.segments.toLocaleString()} segments · ${(s.speed_rules + s.access_rules + s.turn_rules).toLocaleString()} rules`;
   });
 
@@ -168,7 +175,7 @@ function initControls() {
   async function search() {
     const v = q.value.trim();
     if (v.length < 2) { res.hidden = true; res.innerHTML = ''; return; }
-    const hits = await (await fetch('/api/find?q=' + encodeURIComponent(v))).json();
+    const hits = await api('find', v);
     res.innerHTML = '';
     for (const h of hits) {
       const li = el('li', null,
@@ -228,12 +235,12 @@ async function resolve(where) {
   const dims = Object.entries(state.vehicle).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${k}=${v}`);
   if (dims.length) p.set('vehicle', dims.join(','));
 
-  const url = '/api/resolve?' + p;
-  pending = url;
-  const r = await fetch(url);
-  const data = await r.json();
-  if (pending !== url) return;              // a newer request superseded this one
-  if (!r.ok) { showError(data.error); return; }
+  const key = p.toString();
+  pending = key;
+  let data;
+  try { data = await api('resolve', p); }
+  catch (e) { if (pending === key) showError(e.message); return; }
+  if (pending !== key) return;              // a newer request superseded this one
   current = data;
   state.segment = data.segment.id;
   state.at = data.position?.fraction ?? null;

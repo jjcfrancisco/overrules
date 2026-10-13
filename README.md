@@ -31,7 +31,7 @@ duckdb < data/extract_seville.sql      # ~2 min; writes data/seville/{segment,co
 
 ```sh
 cargo build --release
-cargo test --release                   # 5 tests: geodesic LR + rule semantics
+cargo test --release                   # 8 tests: geodesic LR, rule semantics, pack round-trip
 ```
 
 ## Demo
@@ -159,9 +159,46 @@ What you see:
   planar‑vs‑geodesic difference shown under the slider).
 - **Six stories** — one‑click set‑ups for the cases in the Demo section above.
 
-Layout: `src/server.rs` (axum routes + GeoJSON serialisation), `src/query.rs` (shared
-resolve logic so CLI and web can never disagree), `web/` (`index.html`, `style.css`,
-`app.js`; embedded with `include_str!`, so rebuild after editing).
+Layout: `src/api.rs` (the four calls as JSON), `src/server.rs` (axum routes),
+`src/query.rs` (shared resolve logic so CLI and web can never disagree), `web/`
+(`index.html`, `style.css`, `app.js`, `backend.js`; embedded with `include_str!`, so rebuild
+after editing).
+
+## Static web demo: Rust → WebAssembly, no server
+
+```sh
+./scripts/build-web.sh                     # → dist/   (needs wasm-bindgen-cli 0.2.123; on macOS also `brew install llvm`)
+python3 -m http.server -d dist 8788        # or push dist/ to GitHub Pages
+```
+
+The same page, but the resolver runs **in the browser tab**: `src/wasm.rs` wraps the exact
+`src/api.rs` functions the HTTP server uses, and `web/backend.js` picks the transport — it
+probes `api/stats`; if there is no server it loads `pkg/gers_lr_bg.wasm` and the data pack
+instead. Nothing to host but files:
+
+| file | size | what |
+|---|---|---|
+| `pkg/gers_lr_bg.wasm` | 0.96 MB | resolver + geodesic LR + R‑tree + opening‑hours (`wasm-release` profile: fat LTO, panic=abort) |
+| `seville.pack.gz` | 4.4 MB | `gers-lr pack`: the extract as MessagePack — ids, names, classes, connectors (interned), routes, the three rule lists, geometry |
+| `index.html` + `style.css` + `app.js` + `backend.js` | 44 KB | the page |
+
+The pack is **lossless**: coordinates are stored as delta‑encoded integers in 1e‑7°
+(Overture carries seven decimals), connector fractions in 1e‑9, and the packer checks every
+value round‑trips bit‑for‑bit, falling back to f64 for any that would not (Seville: none).
+Loading in Chrome takes ~1.5 s end to end (0.3 s to decode 43,749 segments and build the
+index). The pack drops what the resolver never reads (`names.common/rules`, surface, flags,
+level/subclass/width rules), so `show`‑style dumps stay native‑only.
+
+**Do HTTP and WASM agree?** Verdicts, rule traces, ids and every string are identical.
+Coordinates and distances agree to ~1e‑9 relative (sub‑nanometre): the residue is the
+platform's `sin`/`atan2` — wasm32 uses Rust's pure `libm`, macOS uses Apple's. That is a
+useful reminder that a conformance suite for geodesic LR needs tolerances, as GeographicLib's
+`GeodTest.dat` does, rather than byte equality.
+
+macOS note: Apple's `ar` silently drops non‑Mach‑O members, which loses `psm`'s precompiled
+`wasm32.o` (pulled in via `opening-hours → pest → stacker`) and ends in
+`undefined symbol: rust_psm_stack_pointer`. The build script points
+`AR_wasm32_unknown_unknown` at Homebrew's `llvm-ar`; Linux `ar` is fine.
 
 ## What Seville doesn't have
 
@@ -179,8 +216,11 @@ or `--time now`) — covered by a unit test, but there is nothing in this city t
 | `src/reader.rs` | Parquet → `Segment` (WKB via geozero) |
 | `src/index.rs` | `Network`: id/name lookup, R-tree, nearest-segment with exact geodesic projection |
 | `src/query.rs` | shared `Query` → `Answer` used by both the CLI and the web API |
-| `src/server.rs` | `serve`: axum JSON API + embedded single-page app (`web/`) |
-| `src/main.rs` | CLI: `stats · find · locate · at · resolve · show · audit · serve` |
+| `src/api.rs` | the resolver as JSON: `stats · network · find · resolve` — shared by the HTTP server and the WASM build |
+| `src/server.rs` | `serve`: axum routes + embedded single-page app (`web/`) |
+| `src/pack.rs` | `pack`: lossless MessagePack extract for the browser (quantised, delta-encoded, interned connectors) |
+| `src/wasm.rs` | `wasm-bindgen` entry point (`Gers`), built by `scripts/build-web.sh` |
+| `src/main.rs` | CLI: `stats · find · locate · at · resolve · show · audit · serve · pack` |
 
 ## Not in scope (yet)
 

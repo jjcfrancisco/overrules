@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use anyhow::{bail, Result};
@@ -71,6 +71,12 @@ enum Cmd {
         #[arg(long, default_value_t = 8787)]
         port: u16,
     },
+    /// Convert the extract into a compact pack for the static (WebAssembly) web build.
+    Pack {
+        /// Output file; gzip-compressed, which browsers decompress natively.
+        #[arg(long, default_value = "dist/seville.pack.gz")]
+        out: PathBuf,
+    },
     /// City-wide check: how far would every `between` boundary move if LR were computed planar?
     Audit {
         /// Only list segments whose worst boundary error exceeds this many metres.
@@ -133,11 +139,54 @@ fn main() -> Result<()> {
         Cmd::At { segment, fraction } => at(&net, &segment, fraction, cli.json),
         Cmd::Resolve(a) => resolve(&net, a, cli.json),
         Cmd::Show { segment } => show(&net, &segment),
+        Cmd::Pack { out } => pack(&net, &cli.segments, &out, cli.json),
         Cmd::Audit { threshold_m, limit } => audit(&net, threshold_m, limit, cli.json),
         Cmd::Serve { port } => {
             tokio::runtime::Runtime::new()?.block_on(gers_lr::server::run(net, port))
         }
     }
+}
+
+fn pack(net: &Network, source: &Path, out: &Path, as_json: bool) -> Result<()> {
+    use std::io::Write;
+    let name = source
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let (bytes, report) = gers_lr::pack::encode(&net.segments, &name)?;
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let mut gz =
+        flate2::write::GzEncoder::new(std::fs::File::create(out)?, flate2::Compression::best());
+    gz.write_all(&bytes)?;
+    let compressed = gz.finish()?.metadata()?.len();
+    if as_json {
+        println!(
+            "{}",
+            json!({
+                "out": out, "segments": report.segments, "vertices": report.vertices,
+                "connectors": report.connectors, "exact_fallbacks": report.exact_fallbacks,
+                "bytes": bytes.len(), "gzip_bytes": compressed,
+            })
+        );
+    } else {
+        println!(
+            "wrote {} — {} segments, {} vertices, {} connectors; {:.1} MB packed → {:.1} MB gzipped{}",
+            out.display(),
+            report.segments,
+            report.vertices,
+            report.connectors,
+            bytes.len() as f64 / 1e6,
+            compressed as f64 / 1e6,
+            if report.exact_fallbacks == 0 {
+                "; all numbers quantised losslessly".to_string()
+            } else {
+                format!("; {} list(s) kept as f64", report.exact_fallbacks)
+            }
+        );
+    }
+    Ok(())
 }
 
 fn short(id: &str) -> &str {
