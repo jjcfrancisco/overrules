@@ -1,0 +1,22 @@
+[package]
+name = "gers-lr"
+version = "0.1.0"
+edition = "2021"
+description = "Geodesic linear referencing + scoped-rule resolver for Overture Maps transportation segments (GERS)"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.23"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+geo = "0.33"
+geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"] }
+opening-hours = "2"
+parquet = { version = "60", default-features = false, features = ["json", "zstd", "snap", "base64"] }
+rstar = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
