@@ -206,6 +206,51 @@ Zero `during` (time-scoped) rules in this extract. The evaluator supports them
 (OpenStreetMap `opening_hours` syntax via the `opening-hours` crate, `--time 2026-10-13T08:30`
 or `--time now`) — covered by a unit test, but there is nothing in this city to point it at.
 
+## Direction
+
+Why this exists and where it should go. The full analysis — three candidate shapes
+(reference evaluator + conformance vectors · release linter · docs explainer), precedents,
+governance path, competitor check, evidence and gaps — is in
+[`docs/research/niche-research.md`](docs/research/niche-research.md).
+
+**The job, in one line.** Be the reference answer to *"what does this Overture segment say
+applies here, for this traveller, right now — and which rule said so?"*
+
+**The gap.** [OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469) asks for
+"a reference implementation of the rule evaluation … as well as some sort of viewing/evaluation
+tool" (open, no replies; it formalises a 2023 community request). The only statement of
+"last matching rule wins" is a paragraph of prose in the docs guide — it is in neither the JSON
+Schema nor the Pydantic models; the official examples contain data but no expected‑outcome
+traces; Bifrost, routers‑org, GOAT and others each implement a subset and document the rest as
+not yet modelled; nothing on crates.io, npm or PyPI does this.
+
+**Three layers, in priority order.**
+
+1. **Library** — pure, I/O‑free: geodesic LR primitives (lon/lat ⇄ fraction, fraction ⇄ point,
+   `between` → sub‑geometry) and rule resolution with provenance (the winner, the losers and
+   why each lost, or an explicit *no rule / implied default*). Rust crate; WASM today, Python
+   bindings later. Every ambiguity in the spec — the `truck`/`bus` taxonomy, per‑class defaults,
+   inverted `between` — becomes a documented, cited, versioned decision, never a silent choice.
+2. **Conformance suite** — JSON vectors `(segment, situation) → expected answer`, with
+   tolerances on the geodesic numbers (the HTTP and WASM builds already differ at 1e‑9 relative
+   from libm alone). This is what turns a tool into infrastructure other implementations run
+   against.
+3. **Explorer** — the web page, as the human‑readable face of 1 + 2; linked from the docs
+   rather than merged into them, per [docs#538](https://github.com/OvertureMaps/docs/issues/538).
+
+**Non‑goals.** Not a router, not a downloader, not a data pipeline, not a release linter.
+Whole‑graph checks (dead rules, `prohibited_transitions` sequence adjacency) are a plausible
+later *consumer* of the library, not its job.
+
+**First move.** One thorough reply on #469: link the live demo, show full provenance on a real
+segment (e.g. the redundant‑rule case in
+[discussion #541](https://github.com/orgs/OvertureMaps/discussions/541)), and lay out the
+taxonomy and `between`‑ordering ambiguities as worked examples.
+
+**Name.** `gers-lr` = GERS (Overture's Global Entity Reference System — every segment's id) +
+LR (linear referencing — positions as fractions along the line, the basis of every `between`).
+`overture-lr` is the obvious public name; `overture-resolve` would say more about the rule half.
+
 ## Layout
 
 | file | what |
