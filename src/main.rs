@@ -2,14 +2,14 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
-use anyhow::{anyhow, bail, Context, Result};
-use chrono::{Local, NaiveDateTime};
+use anyhow::{bail, Result};
 use clap::{Args, Parser, Subcommand};
 use geo::Point;
 use serde_json::json;
 
 use gers_lr::lr;
 use gers_lr::model::Segment;
+use gers_lr::query::{self, Query};
 use gers_lr::rules::{self, PropertyResolution, Situation, Verdict};
 use gers_lr::{reader, Network};
 
@@ -65,6 +65,11 @@ enum Cmd {
     Show {
         #[arg(long)]
         segment: String,
+    },
+    /// Serve the interactive map demo and a JSON API on localhost.
+    Serve {
+        #[arg(long, default_value_t = 8787)]
+        port: u16,
     },
     /// City-wide check: how far would every `between` boundary move if LR were computed planar?
     Audit {
@@ -129,15 +134,9 @@ fn main() -> Result<()> {
         Cmd::Resolve(a) => resolve(&net, a, cli.json),
         Cmd::Show { segment } => show(&net, &segment),
         Cmd::Audit { threshold_m, limit } => audit(&net, threshold_m, limit, cli.json),
-    }
-}
-
-fn one<'a>(net: &'a Network, needle: &str) -> Result<&'a Segment> {
-    let hits = net.find_id(needle);
-    match hits.len() {
-        0 => bail!("no segment with id (prefix) {needle}"),
-        1 => Ok(hits[0]),
-        n => bail!("{n} segments match prefix {needle}; be more specific"),
+        Cmd::Serve { port } => {
+            tokio::runtime::Runtime::new()?.block_on(gers_lr::server::run(net, port))
+        }
     }
 }
 
@@ -480,7 +479,7 @@ fn locate(net: &Network, lon: f64, lat: f64, limit: usize, as_json: bool) -> Res
 }
 
 fn at(net: &Network, segment: &str, fraction: f64, as_json: bool) -> Result<()> {
-    let s = one(net, segment)?;
+    let s = query::one(net, segment)?;
     let g = lr::point_at(&s.geometry, &s.measure, fraction);
     let planar =
         geo::InterpolatableLine::point_at_ratio_from_start(&s.geometry, &geo::Euclidean, fraction)
@@ -515,90 +514,28 @@ fn at(net: &Network, segment: &str, fraction: f64, as_json: bool) -> Result<()> 
     Ok(())
 }
 
-fn parse_time(s: &str) -> Result<NaiveDateTime> {
-    if s.eq_ignore_ascii_case("now") {
-        return Ok(Local::now().naive_local());
-    }
-    for fmt in [
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M",
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%d %H:%M",
-    ] {
-        if let Ok(t) = NaiveDateTime::parse_from_str(s, fmt) {
-            return Ok(t);
-        }
-    }
-    bail!("cannot parse time {s:?}; use e.g. 2026-10-13T08:30 or now")
-}
-
 fn resolve(net: &Network, a: ResolveArgs, as_json: bool) -> Result<()> {
-    // 1. Which segment, and where on it.
-    let (seg, fraction, snapped): (&Segment, Option<f64>, Option<lr::Projection>) =
-        match (&a.segment, a.lon, a.lat) {
-            (Some(id), None, None) => (one(net, id)?, a.at, None),
-            (Some(id), Some(lon), Some(lat)) => {
-                let s = one(net, id)?;
-                let p = lr::project(&s.geometry, &s.measure, Point::new(lon, lat));
-                (s, Some(p.geodesic.fraction), Some(p))
-            }
-            (None, Some(lon), Some(lat)) => {
-                let hit = net
-                    .nearest(lon, lat, 1, 40)
-                    .into_iter()
-                    .next()
-                    .ok_or_else(|| anyhow!("no segments"))?;
-                (
-                    hit.segment,
-                    Some(hit.projection.geodesic.fraction),
-                    Some(hit.projection),
-                )
-            }
-            _ => bail!("give --segment, or --lon/--lat (optionally both)"),
-        };
-    if let Some(f) = fraction {
-        if !(0.0..=1.0).contains(&f) {
-            bail!("--at must be within 0..1");
-        }
-    }
-
-    // 2. The situation.
-    let mut vehicle = BTreeMap::new();
-    for v in &a.vehicle {
-        let (k, val) = v
-            .split_once('=')
-            .ok_or_else(|| anyhow!("--vehicle expects dimension=value, got {v}"))?;
-        vehicle.insert(
-            k.trim().to_string(),
-            val.trim()
-                .parse::<f64>()
-                .with_context(|| format!("vehicle value in {v}"))?,
-        );
-    }
-    if let Some(h) = &a.heading {
-        if h != "forward" && h != "backward" {
-            bail!("--heading must be forward or backward");
-        }
-    }
-    if let Some(m) = &a.mode {
-        if rules::mode_lineage(m).is_empty() {
-            bail!("unknown --mode {m}");
-        }
-    }
-    let situation = Situation {
-        fraction,
-        heading: a.heading.clone(),
-        mode: a.mode.clone(),
-        time: a.time.as_deref().map(parse_time).transpose()?,
-        using: a.using.clone(),
-        recognized: a.recognized.clone(),
-        vehicle,
+    let q = Query {
+        segment: a.segment,
+        at: a.at,
+        lon: a.lon,
+        lat: a.lat,
+        heading: a.heading,
+        mode: a.mode,
+        time: a.time,
+        using: a.using,
+        recognized: a.recognized,
+        vehicle: a.vehicle,
     };
-
-    // 3. Resolve.
-    let access = rules::resolve_access(seg, &situation);
-    let speed = rules::resolve_speed(seg, &situation);
-    let transitions = rules::resolve_transitions(seg, &situation, |id| net.describe(id));
+    let query::Answer {
+        segment: seg,
+        fraction,
+        snapped,
+        situation,
+        access,
+        speed,
+        transitions,
+    } = query::answer(net, &q)?;
 
     if as_json {
         println!(
@@ -764,7 +701,7 @@ fn truncate(s: &str, n: usize) -> String {
 }
 
 fn show(net: &Network, segment: &str) -> Result<()> {
-    let s = one(net, segment)?;
+    let s = query::one(net, segment)?;
     let coords: Vec<[f64; 2]> = s.geometry.0.iter().map(|c| [c.x, c.y]).collect();
     let mut features = vec![json!({
         "type": "Feature",

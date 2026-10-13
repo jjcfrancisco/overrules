@@ -125,6 +125,44 @@ gers-lr audit
 18 % of Seville's `between`-scoped segments would have a rule boundary misplaced by more than
 5 m; a speed-limit change on the SE-40 motorway would move by 50 m.
 
+## Web demo: `gers-lr serve`
+
+```sh
+./target/release/gers-lr serve            # → http://127.0.0.1:8787   (--port to change)
+```
+
+The same resolver behind the CLI, on a map. Nothing is rendered server-side: the binary
+embeds a single-page app (MapLibre GL + OpenFreeMap dark basemap, no API key) and exposes a
+small JSON API:
+
+| route | what |
+|---|---|
+| `GET /api/stats` | counts for the header |
+| `GET /api/network` | every segment as GeoJSON (~12 MB), flagged by which rule kinds it carries |
+| `GET /api/find?q=` | the `find` command |
+| `GET /api/resolve?…` | the `resolve` command — `segment=&at=` **or** `lon=&lat=`, plus `heading`, `mode`, `time`, comma‑lists `using`, `recognized`, and `vehicle=weight=12,height=4.2` |
+
+What you see:
+
+- **The question in plain English** — the form is a sentence: *"I'm driving a car eastbound on
+  Ronda Norte de Sevilla (SE‑20), 150 m into a 166 m stretch. What applies here?"* Change any
+  control and the sentence, the answer and the map update together.
+- **Three verdict tiles** — speed limit, access, banned turns — each naming the rule that
+  decided it (*rule #2 of 3*), or saying honestly that nothing in the data did.
+- **A rule‑by‑rule explanation** — every rule on the segment, ✔ / ✘ / ? per scope, the winner
+  marked, so a wrong verdict can be traced back to the data.
+- **The map** — lime roads carry `between` boundaries, white roads carry rules, grey roads
+  carry none. Select a road and you get a rotating arrow at your position, hollow rings
+  where rules change along it, **red dots where planar maths would have put those
+  boundaries**, and red circles on the connectors where turns are banned for your heading.
+- **A position slider** (or click anywhere on the map to snap to the nearest road, with the
+  planar‑vs‑geodesic difference shown under the slider).
+- **Six stories** — one‑click set‑ups for the cases in the Demo section above.
+
+Layout: `src/server.rs` (axum routes + GeoJSON serialisation), `src/query.rs` (shared
+resolve logic so CLI and web can never disagree), `web/` (`index.html`, `style.css`,
+`app.js`; embedded with `include_str!`, so rebuild after editing).
+
 ## What Seville doesn't have
 
 Zero `during` (time-scoped) rules in this extract. The evaluator supports them
@@ -140,7 +178,9 @@ or `--time now`) — covered by a unit test, but there is nothing in this city t
 | `src/model.rs` | serde model of Overture segment rules |
 | `src/reader.rs` | Parquet → `Segment` (WKB via geozero) |
 | `src/index.rs` | `Network`: id/name lookup, R-tree, nearest-segment with exact geodesic projection |
-| `src/main.rs` | CLI: `stats · find · locate · at · resolve · show · audit` |
+| `src/query.rs` | shared `Query` → `Answer` used by both the CLI and the web API |
+| `src/server.rs` | `serve`: axum JSON API + embedded single-page app (`web/`) |
+| `src/main.rs` | CLI: `stats · find · locate · at · resolve · show · audit · serve` |
 
 ## Not in scope (yet)
 

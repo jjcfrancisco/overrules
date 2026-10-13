@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gers-lr · Seville</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="map"></div>
+<div id="tooltip" hidden></div>
+
+<aside id="panel">
+  <header class="brand">
+    <div class="wordmark">gers<span>-lr</span></div>
+    <div class="sub" id="subtitle">Overture · Seville · 2026-09-23.1</div>
+  </header>
+
+  <div class="search">
+    <input id="q" type="search" placeholder="Find a street…" autocomplete="off" spellcheck="false">
+    <ul id="results" hidden></ul>
+  </div>
+
+  <section class="traveller">
+    <div class="label">You</div>
+    <div class="row">
+      <div class="toggle" id="heading">
+        <button data-h="forward" class="on">Forward <small></small></button>
+        <button data-h="backward">Backward <small></small></button>
+      </div>
+      <select id="mode" aria-label="Travel mode"></select>
+    </div>
+    <div class="row chips" id="using" data-title="using"></div>
+    <div class="row chips" id="recognized" data-title="recognized"></div>
+    <div class="row dims" id="vehicle">
+      <label>weight <input data-k="weight" type="number" step="0.5" min="0" placeholder="t"></label>
+      <label>height <input data-k="height" type="number" step="0.1" min="0" placeholder="m"></label>
+      <label>length <input data-k="length" type="number" step="0.5" min="0" placeholder="m"></label>
+      <label>time <input id="time" type="datetime-local"></label>
+    </div>
+  </section>
+
+  <section class="try">
+    <p class="hint">Click any road on the map — or try a story:</p>
+    <div id="stories" class="stories"></div>
+  </section>
+
+  <section id="question" class="question" hidden></section>
+
+  <section id="answer" hidden>
+    <div class="verdicts">
+      <div class="tile" id="t-speed"><div class="k">Speed limit</div><div class="v">—</div><div class="w"></div></div>
+      <div class="tile" id="t-access"><div class="k">Access</div><div class="v">—</div><div class="w"></div></div>
+      <div class="tile" id="t-turns"><div class="k">Banned turns</div><div class="v">—</div><div class="w"></div></div>
+    </div>
+
+    <div class="position">
+      <input id="at" type="range" min="0" max="1" step="0.0005" aria-label="Position along the segment">
+      <div class="pos-meta" id="pos-meta"></div>
+    </div>
+
+    <div class="rules" id="rules"></div>
+  </section>
+
+  <footer>
+    All scopes must hold (AND) · the last matching rule wins · otherwise the property default.
+    Fractions are geodesic on WGS84, as Overture defines them.
+  </footer>
+</aside>
+
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
