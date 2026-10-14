@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(s.name.as_deref(), Some("Calle Feria"));
         assert_eq!(s.connectors.len(), 2);
         assert_eq!(s.speed_limits.len(), 1);
-        assert!(s.access_restrictions.is_empty());
+        assert_eq!(s.access_restrictions.len(), 0);
         assert!(s.length_m() > 800.0);
     }
 
