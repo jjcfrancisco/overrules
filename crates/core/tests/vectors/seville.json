@@ -1,0 +1,120 @@
+{
+  "description": "Draft conformance vectors for Overture rule evaluation: a traveller at a position on a real segment, and the answer the spec implies. Format is unstable until 1.0. See tests/vectors/README.md.",
+  "fixture": "../fixtures/seville.geojson",
+  "cases": [
+    {
+      "name": "between and heading together: rule #0 says 90, travelling forward the last match is #5",
+      "segment": "e26d3384-0e65-4601-9c1c-4ce06466d3b2",
+      "situation": { "at": 0.05, "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 5, "could_override": [], "max_speed": { "value": 80, "unit": "km/h" } } }
+    },
+    {
+      "name": "same spot, opposite heading: rule #4",
+      "segment": "e26d3384-0e65-4601-9c1c-4ce06466d3b2",
+      "situation": { "at": 0.05, "heading": "backward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 4, "could_override": [], "max_speed": { "value": 50, "unit": "km/h" } } }
+    },
+    {
+      "name": "no position: every between rule is undetermined, heading still rules some out",
+      "segment": "e26d3384-0e65-4601-9c1c-4ce06466d3b2",
+      "situation": { "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": null, "could_override": [0, 1, 2, 3, 5, 7], "max_speed": null } }
+    },
+    {
+      "name": "boundary fractions are inclusive",
+      "segment": "e26d3384-0e65-4601-9c1c-4ce06466d3b2",
+      "situation": { "at": 0.123562054, "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 5, "max_speed": { "value": 80, "unit": "km/h" } } }
+    },
+    {
+      "name": "ring road, forward near the end",
+      "segment": "99698abc-df31-492a-860d-6caf43ed4702",
+      "situation": { "at": 0.9, "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 2, "max_speed": { "value": 60, "unit": "km/h" } } }
+    },
+    {
+      "name": "ring road, backward at the same spot",
+      "segment": "99698abc-df31-492a-860d-6caf43ed4702",
+      "situation": { "at": 0.9, "heading": "backward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 1, "max_speed": { "value": 80, "unit": "km/h" } } }
+    },
+    {
+      "name": "living street, against the one-way",
+      "segment": "1b946971-1141-444f-ba2e-63f1a41808ae",
+      "situation": { "heading": "backward", "mode": "car" },
+      "expect": { "access": { "determining": 0, "could_override": [], "value": "denied" } }
+    },
+    {
+      "name": "living street, residents excepted: the later rule wins",
+      "segment": "1b946971-1141-444f-ba2e-63f1a41808ae",
+      "situation": { "heading": "backward", "mode": "car", "recognized": ["as_private"] },
+      "expect": { "access": { "determining": 3, "value": "allowed" } }
+    },
+    {
+      "name": "living street, on foot to a destination",
+      "segment": "1b946971-1141-444f-ba2e-63f1a41808ae",
+      "situation": { "heading": "backward", "mode": "foot", "using": ["at_destination"] },
+      "expect": { "access": { "determining": 1, "value": "allowed" } }
+    },
+    {
+      "name": "living street, with the flow: no rule applies, so the class default does",
+      "segment": "1b946971-1141-444f-ba2e-63f1a41808ae",
+      "situation": { "heading": "forward", "mode": "car" },
+      "expect": { "access": { "determining": null, "could_override": [], "value": null } }
+    },
+    {
+      "name": "weight limit, exactly at the threshold: greater_than is strict",
+      "segment": "645f3ec7-4507-4cc2-b04b-e563d96eea6e",
+      "situation": { "heading": "forward", "mode": "truck", "vehicle": { "weight": 3.5 } },
+      "expect": { "access": { "determining": null, "could_override": [], "value": null } }
+    },
+    {
+      "name": "weight limit, heavy lorry",
+      "segment": "645f3ec7-4507-4cc2-b04b-e563d96eea6e",
+      "situation": { "heading": "forward", "mode": "truck", "vehicle": { "weight": 12 } },
+      "expect": { "access": { "determining": 1, "could_override": [], "value": "denied" } }
+    },
+    {
+      "name": "weight limit, weight unknown: the rule could still override",
+      "segment": "645f3ec7-4507-4cc2-b04b-e563d96eea6e",
+      "situation": { "heading": "forward", "mode": "truck" },
+      "expect": { "access": { "determining": null, "could_override": [1], "value": null } }
+    },
+    {
+      "name": "banned turns travelling forward",
+      "segment": "a022afe5-18e3-4999-b089-305b458ff65a",
+      "situation": { "at": 0.5, "heading": "forward", "mode": "car" },
+      "expect": { "prohibited_transitions": { "in_force": [0, 3, 4, 6, 8, 11, 12, 14, 15], "could_apply": [] } }
+    },
+    {
+      "name": "banned turns travelling backward",
+      "segment": "a022afe5-18e3-4999-b089-305b458ff65a",
+      "situation": { "at": 0.5, "heading": "backward", "mode": "car" },
+      "expect": { "prohibited_transitions": { "in_force": [1, 2, 5, 7, 9, 10, 13, 16], "could_apply": [] } }
+    },
+    {
+      "name": "banned turns, heading unknown: all could apply, none certainly do",
+      "segment": "a022afe5-18e3-4999-b089-305b458ff65a",
+      "situation": { "at": 0.5, "mode": "car" },
+      "expect": { "prohibited_transitions": { "in_force": [], "could_apply": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] } }
+    },
+    {
+      "name": "motorway, just inside the 120 stretch",
+      "segment": "55c99d8b-d69e-488c-9b62-61bc5e584f1d",
+      "situation": { "at": 0.6562, "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": 0, "max_speed": { "value": 120, "unit": "km/h" } }, "access": { "value": null } }
+    },
+    {
+      "name": "motorway, just past it",
+      "segment": "55c99d8b-d69e-488c-9b62-61bc5e584f1d",
+      "situation": { "at": 0.66, "heading": "forward", "mode": "car" },
+      "expect": { "speed_limit": { "determining": null, "could_override": [], "max_speed": null } }
+    },
+    {
+      "name": "motorway, wrong way",
+      "segment": "55c99d8b-d69e-488c-9b62-61bc5e584f1d",
+      "situation": { "at": 0.5, "heading": "backward", "mode": "car" },
+      "expect": { "access": { "determining": 0, "value": "denied" } }
+    }
+  ]
+}
