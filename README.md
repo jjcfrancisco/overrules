@@ -16,7 +16,7 @@ curved surface (geodesically on WGS84), not with flat longitude/latitude maths.
 missing facts could change the answer.
 
 > Pre-release: supports Overture schema **2.0.0**. Not published to crates.io yet; the API may
-> change. Python bindings are planned. The map demo lives in
+> change. The map demo lives in
 > [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
 
 ## Use
@@ -86,16 +86,7 @@ Run `just test` for tests, `just ci` for local checks, or `just` to list recipes
 checked-in fixtures; no data download is needed. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 setup, other checks and schema-update instructions.
 
-The goal is a reference evaluator and shared test suite, addressing
-[OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469)—not a router or data
-pipeline. [Historical research](docs/research) records the reasoning behind the project.
-
-## Credits
-
-Developed by [Francisco Jiménez](https://github.com/jjcfrancisco) with AI coding assistance.
-Git history records Copilot and Claude contributions; subsequent fixes and documentation
-were assisted by GPT models through GitHub Copilot in OpenCode. Francisco sets the direction
-and makes the decisions; AI-assisted commits identify their co-author.
+The goal is a rule evaluator and shared test suite—not a router or data pipeline.
 
 ## Licence
 
