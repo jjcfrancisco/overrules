@@ -1,89 +1,121 @@
-# gers-lr — Overture linear referencing + rule resolver (Seville demo)
+# overrules
 
-A small Rust library/CLI that answers one question correctly:
+[![CI](https://github.com/jjcfrancisco/overrules/actions/workflows/ci.yml/badge.svg)](https://github.com/jjcfrancisco/overrules/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#licence)
 
-> *Standing at **this point** on **this Overture segment**, travelling **this way**, as **this kind of traveller**, **right now** — what rules apply, and why?*
+**Which Overture transportation rules apply here, for this traveller, and why.**
 
-Overture's transportation theme attaches `speed_limits`, `access_restrictions` and
-`prohibited_transitions` to segments as **lists of scoped rules**. Each rule may be limited
-by `when` (heading, time, travel mode, purpose, status, vehicle dimensions) and by `between`
-(a geodesic fraction range along the segment). The resolution semantics are:
+> *Standing at **this point** on **this road**, travelling **this way**, on foot, by bike or at
+> the wheel, **right now**: what is the speed limit, may I pass, which turns are banned, and
+> which rule said so?*
 
-* all scopes of a rule must hold (**AND**);
-* the **last** matching rule in the list wins;
-* otherwise the property default applies;
-* `between` fractions are **geodesic on WGS84**, not planar.
+[Overture Maps](https://overturemaps.org) attaches `speed_limits`, `access_restrictions` and
+`prohibited_transitions` to road segments as **ordered lists of scoped rules**. Each rule may be
+limited by `when` (heading, time, travel mode, purpose, status, vehicle dimensions) and by
+`between` (a stretch of the road, as fractions of its length). The spec says:
 
-Most consumers either read `speed_limits[0]` or project with planar maths. This tool shows
-what that costs, on real data, for a real city.
+- a rule applies when **all** its conditions hold;
+- the **last** applicable rule in the list wins;
+- otherwise a default applies;
+- `between` fractions are **geodesic on WGS84**, not planar.
 
-## Data (6.8 MB, not 400 GB)
+Most consumers read `speed_limits[0]`, or compute positions in the plane. `overrules`
+implements the spec as written and shows its working: every rule, every condition, and which
+rule decided. Where you leave a fact out (the time, the vehicle's weight) it says which rules
+*could* change the answer instead of guessing.
 
-Seville, Spain, release `2026-09-23.1`, bbox lon −6.05..−5.85 / lat 37.30..37.46.
+It is a Rust library first, with a CLI, a web explorer that also runs as WebAssembly, and a
+draft set of conformance vectors. Python bindings are planned.
 
-```sh
-duckdb < data/extract_seville.sql      # ~2 min; writes data/seville/{segment,connector}.parquet
+## Quick start
+
+### Library
+
+```toml
+[dependencies]
+overrules = { git = "https://github.com/jjcfrancisco/overrules", features = ["parquet"] }
 ```
 
-43,749 segments · 54,896 connectors.
+```rust
+use overrules::{Access, Heading, Network, Situation, TravelMode};
 
-## Build
+let net = Network::new(overrules::io::read_path("segment.parquet")?);
+let street = net.lookup("1b946971")?; // GERS id or unique prefix
 
-```sh
-cargo build --release
-cargo test --release                   # 8 tests: geodesic LR, rule semantics, pack round-trip
+let driver = Situation::new().heading(Heading::Backward).mode(TravelMode::Car);
+let answer = overrules::resolve(street, &driver)?;
+assert_eq!(answer.access_outcome(), Access::Rule(overrules::AccessType::Denied));
+assert_eq!(answer.access.determining, Some(0)); // rule #0 decided
+
+// Residents are excepted by a later rule, and the later rule wins.
+let resident = driver.recognized("as_private");
+let answer = overrules::resolve(street, &resident)?;
+assert_eq!(answer.access.determining, Some(3));
 ```
 
-## Demo
+Features: `parquet` reads Overture GeoParquet; `pack` writes compact snapshots for the
+browser. GeoJSON is always available. API docs: `just doc --open`.
 
-### 1 · Same spot, opposite directions → different speed limits
-
-Segment `e26d3384…` (secondary road, 996 m) carries **8** speed-limit rules scoped by both
-heading and `between`. Rule #0 says 90 km/h — that's what a naive reader sees.
+### Command line
 
 ```sh
-gers-lr resolve --segment e26d3384 --at 0.05 --heading forward  --mode car   # ⇒ max 80 km/h  [rule #5]
-gers-lr resolve --segment e26d3384 --at 0.05 --heading backward --mode car   # ⇒ max 50 km/h  [rule #4]
+cargo install --git https://github.com/jjcfrancisco/overrules overrules-cli
+just data                                   # or: duckdb < data/extract_seville.sql (needs DuckDB, ~2 min)
+export OVERRULES_SEGMENTS=data/seville/segment.parquet
+overrules resolve --segment e26d3384 --at 0.05 --heading forward --mode car
 ```
 
-The report shows every rule, every scope, ✔/✘/?, and names the determining rule.
-
-### 2 · Living street with exceptions (heading + mode + purpose + status)
-
-`Calle Pintor Rosales`, 4 access rules: denied backward; allowed on foot `at_destination`;
-allowed for bicycles/motor vehicles `as_private`; allowed `as_private`.
+### Web explorer
 
 ```sh
-gers-lr resolve --segment 1b946971 --heading backward --mode car                         # ⇒ DENIED   [rule #0]
-gers-lr resolve --segment 1b946971 --heading backward --mode car --recognized as_private # ⇒ ALLOWED  [rule #3]
-gers-lr resolve --segment 1b946971 --heading backward --mode foot --using at_destination # ⇒ ALLOWED  [rule #1]
+just serve                                  # http://127.0.0.1:8787, the explorer over HTTP
+just web && just web-serve                  # the same page as static files, resolver in WebAssembly
 ```
 
-Note `car ⊂ motor_vehicle`: the mode taxonomy is applied, not string equality.
+## What it shows, on real data
 
-### 3 · Vehicle dimensions and *undetermined* facts
+The demo data is Seville, Spain (Overture release `2026-09-23.1`, 43,749 segments, 6.8 MB):
+`just data` downloads it. The cases below are also [conformance
+vectors](crates/core/tests/vectors/seville.json), run on every `cargo test`.
 
-`Avenida del Almendral`: denied when `weight > 3.5 t`.
+**Same spot, opposite directions, different limits.** Segment `e26d3384` carries 8 speed
+rules scoped by both heading and `between`. Rule #0 says 90 km/h, which is what a naive reader
+sees.
 
 ```sh
-gers-lr resolve --segment 645f3ec7 --heading forward --mode truck --vehicle weight=3.5  # ⇒ IMPLIED (3.5 is not > 3.5)
-gers-lr resolve --segment 645f3ec7 --heading forward --mode truck --vehicle weight=12   # ⇒ DENIED  [rule #1]
-gers-lr resolve --segment 645f3ec7 --heading forward --mode truck                       # ⇒ IMPLIED, but
-#   ? rule(s) [1] come later and are undetermined — they would override if their missing facts hold
+overrules resolve --segment e26d3384 --at 0.05 --heading forward  --mode car   # ⇒ max 80 km/h [rule #5]
+overrules resolve --segment e26d3384 --at 0.05 --heading backward --mode car   # ⇒ max 50 km/h [rule #4]
 ```
 
-Evaluation is **three-valued**: a scope whose fact you did not supply is *undetermined*, and
-the verdict tells you which later rules could still flip it. No silent guessing.
-
-### 4 · Prohibited transitions
-
-`Paseo de las Delicias` (`a022afe5…`) has 17 of them; each is resolved against your heading
-and printed with the via-connector and the target segment's name/class.
-
-### 5 · Geodesic linear referencing
+**A living street with exceptions.** `Calle Pintor Rosales`: no entry backward, except on foot
+to a destination, or for residents.
 
 ```sh
-gers-lr locate --lon -5.9926 --lat 37.3861        # the Giralda
+overrules resolve --segment 1b946971 --heading backward --mode car                          # ⇒ DENIED  [rule #0]
+overrules resolve --segment 1b946971 --heading backward --mode car --recognized as_private  # ⇒ ALLOWED [rule #3]
+overrules resolve --segment 1b946971 --heading backward --mode foot --using at_destination  # ⇒ ALLOWED [rule #1]
+```
+
+The mode taxonomy is applied, not string equality: `car ⊂ motor_vehicle ⊂ vehicle`.
+
+**Vehicle dimensions, and facts you did not give.** `Avenida del Almendral` is closed to
+vehicles over 3.5 t.
+
+```sh
+overrules resolve --segment 645f3ec7 --heading forward --mode truck --vehicle weight=3.5      # ⇒ IMPLIED (3.5 is not > 3.5)
+overrules resolve --segment 645f3ec7 --heading forward --mode truck --vehicle weight=12000kg  # ⇒ DENIED  [rule #1]
+overrules resolve --segment 645f3ec7 --heading forward --mode truck
+#   ⇒ IMPLIED, but rule [1] comes later and is undetermined: it would override if its missing facts hold
+```
+
+**Banned turns.** `Paseo de las Delicias` (`a022afe5`) has 17 prohibited transitions; 9 are in
+force travelling forward, 8 backward, and with no heading all 17 *could* apply.
+
+**Geodesic linear referencing.** Snap a point to the nearest roads, and see what planar maths
+would have said:
+
+```sh
+overrules locate --lon -5.9926 --lat 37.3861        # the Giralda
 ```
 
 ```
@@ -94,20 +126,8 @@ gers-lr locate --lon -5.9926 --lat 37.3861        # the Giralda
   ae3f22e4-7fef <unnamed> (road/unknown)                      41.2 m     0.2043     0.0399     9.13 m
 ```
 
-`Δ planar` = if you stored the planar fraction and someone read it back per Overture's
-geodesic definition, this is how far along the road they would land from the true point.
-
-```sh
-gers-lr at --segment e26d3384 --fraction 0.123562054   # the 90→70 boundary: geodesic vs planar point, 1.98 m apart
-gers-lr resolve --lon -6.0030 --lat 37.3866 --heading forward --mode car   # snap, then resolve at the snapped fraction
-gers-lr show --segment 645f3ec7                         # GeoJSON: geometry + connectors at their fractions
-```
-
-### 6 · City-wide audit: what planar maths would cost Seville
-
-```sh
-gers-lr audit
-```
+**What planar maths would cost a whole city.** `overrules audit` moves every `between`
+boundary in Seville from where Overture means it to where a planar implementation would put it:
 
 ```
   segments with between-scoped rules : 644
@@ -115,158 +135,99 @@ gers-lr audit
   mean displacement                  : 1.97 m
   histogram                          : <1 m 1317  · 1–5 m 297  · 5–10 m 111  · 10–25 m 96  · ≥25 m 11
   segments with a boundary > 5 m off : 117
-
-  worst offenders:
-  6383437f-209f <unnamed> (road/track)                         3612 m       2    54.58 m    0.1456
-  55c99d8b-d69e "SE-40" (road/motorway)                        3787 m       2    50.38 m    0.6562
-  ee215add-60fd "SE-40" (road/motorway)                        3707 m       4    46.03 m    0.3482
 ```
 
-18 % of Seville's `between`-scoped segments would have a rule boundary misplaced by more than
-5 m; a speed-limit change on the SE-40 motorway would move by 50 m.
+18% of Seville's `between`-scoped segments would have a rule boundary misplaced by more than
+5 m. A speed-limit change on the SE-40 motorway would move by 50 m.
 
-## Web demo: `gers-lr serve`
+## The explorer
 
-```sh
-./target/release/gers-lr serve            # → http://127.0.0.1:8787   (--port to change)
-```
+The same resolver, on a map. The page asks the question in a sentence ("I'm driving a car
+eastbound on Ronda Norte de Sevilla (SE-20), 150 m into a 166 m stretch. What applies here?"),
+answers with three tiles (speed limit, access, banned turns), and lists every rule with ✔ / ✘ / ?
+per condition. On the map: hollow rings where rules change along the road, red dots where planar
+maths would have put those boundaries, and red circles on connectors with banned turns.
 
-The same resolver behind the CLI, on a map. Nothing is rendered server-side: the binary
-embeds a single-page app (MapLibre GL + OpenFreeMap dark basemap, no API key) and exposes a
-small JSON API:
+It runs two ways with one codebase: `overrules serve` answers over HTTP, or `just web` builds a
+static site where the resolver runs in the browser as WebAssembly (about 1 MB of code plus a
+4.4 MB data pack). The pack is lossless: coordinates are delta-encoded integers in 1e-7°,
+connector positions in 1e-9, and any value that would not round-trip exactly stays a float.
+Both transports return the same answers; positions found by projection agree to well under a
+millimetre (`wasm32` uses Rust's `libm`, native builds the platform's).
 
-| route | what |
+## Semantics
+
+Where the spec is silent, `overrules` makes a documented choice rather than a silent one: the
+travel-mode tree (where `truck` and `bus` sit), missing facts, `using`/`recognized` claims,
+inverted `between` ranges, units such as the short ton, and what "default" means.
+All of it is in **[docs/semantics.md](docs/semantics.md)**.
+
+## Workspace
+
+| crate | what |
 |---|---|
-| `GET /api/stats` | counts for the header |
-| `GET /api/network` | every segment as GeoJSON (~12 MB), flagged by which rule kinds it carries |
-| `GET /api/find?q=` | the `find` command |
-| `GET /api/resolve?…` | the `resolve` command — `segment=&at=` **or** `lon=&lat=`, plus `heading`, `mode`, `time`, comma‑lists `using`, `recognized`, and `vehicle=weight=12,height=4.2` |
+| [`crates/core`](crates/core) (`overrules`) | The library: typed Overture segments and rules, geodesic linear referencing, three-valued rule evaluation, a spatial index, GeoJSON/Parquet readers, packs. No I/O unless asked. |
+| [`crates/cli`](crates/cli) (`overrules-cli`) | The `overrules` binary: `stats · find · locate · at · resolve · export · audit · pack · serve`. |
+| [`crates/explorer`](crates/explorer) (`overrules-explorer`) | The web explorer: the JSON API, the embedded page (`web/`), and an axum server. |
+| [`crates/wasm`](crates/wasm) (`overrules-wasm`) | The explorer API compiled to WebAssembly for the static site. |
 
-What you see:
+Errors follow the pattern in [rustac](https://github.com/stac-utils/rustac) and
+[Martin](https://github.com/maplibre/martin): one `thiserror` enum per library crate,
+`#[non_exhaustive]`, with an `ErrorKind` that front ends map to a transport (404, 400, 500)
+without matching every variant. The CLI uses `anyhow`.
 
-- **The question in plain English** — the form is a sentence: *"I'm driving a car eastbound on
-  Ronda Norte de Sevilla (SE‑20), 150 m into a 166 m stretch. What applies here?"* Change any
-  control and the sentence, the answer and the map update together.
-- **Three verdict tiles** — speed limit, access, banned turns — each naming the rule that
-  decided it (*rule #2 of 3*), or saying honestly that nothing in the data did.
-- **A rule‑by‑rule explanation** — every rule on the segment, ✔ / ✘ / ? per scope, the winner
-  marked, so a wrong verdict can be traced back to the data.
-- **The map** — lime roads carry `between` boundaries, white roads carry rules, grey roads
-  carry none. Select a road and you get a rotating arrow at your position, hollow rings
-  where rules change along it, **red dots where planar maths would have put those
-  boundaries**, and red circles on the connectors where turns are banned for your heading.
-- **A position slider** (or click anywhere on the map to snap to the nearest road, with the
-  planar‑vs‑geodesic difference shown under the slider).
-- **Six stories** — one‑click set‑ups for the cases in the Demo section above.
+## Development
 
-Layout: `src/api.rs` (the four calls as JSON), `src/server.rs` (axum routes),
-`src/query.rs` (shared resolve logic so CLI and web can never disagree), `web/`
-(`index.html`, `style.css`, `app.js`, `backend.js`; embedded with `include_str!`, so rebuild
-after editing).
+Everything runs through [`just`](https://github.com/casey/just):
 
-## Static web demo: Rust → WebAssembly, no server
+| recipe | what |
+|---|---|
+| `just test` | unit, integration and doc tests, and the conformance vectors |
+| `just clippy` · `just fmt` | lint (pedantic, warnings are errors) and format |
+| `just ci` | everything CI runs |
+| `just msrv` | build with the minimum supported Rust (1.95) |
+| `just data` · `just fixtures` | download Seville; rebuild the test fixture from it |
+| `just run <args>` · `just serve` | the CLI; the explorer |
+| `just web` · `just wasm-smoke` | the static site; a Node test of the WebAssembly build |
 
-```sh
-./scripts/build-web.sh                     # → dist/   (needs wasm-bindgen-cli 0.2.123; on macOS also `brew install llvm`)
-python3 -m http.server -d dist 8788        # or push dist/ to GitHub Pages
-```
-
-The same page, but the resolver runs **in the browser tab**: `src/wasm.rs` wraps the exact
-`src/api.rs` functions the HTTP server uses, and `web/backend.js` picks the transport — it
-probes `api/stats`; if there is no server it loads `pkg/gers_lr_bg.wasm` and the data pack
-instead. Nothing to host but files:
-
-| file | size | what |
-|---|---|---|
-| `pkg/gers_lr_bg.wasm` | 0.96 MB | resolver + geodesic LR + R‑tree + opening‑hours (`wasm-release` profile: fat LTO, panic=abort) |
-| `seville.pack.gz` | 4.4 MB | `gers-lr pack`: the extract as MessagePack — ids, names, classes, connectors (interned), routes, the three rule lists, geometry |
-| `index.html` + `style.css` + `app.js` + `backend.js` | 44 KB | the page |
-
-The pack is **lossless**: coordinates are stored as delta‑encoded integers in 1e‑7°
-(Overture carries seven decimals), connector fractions in 1e‑9, and the packer checks every
-value round‑trips bit‑for‑bit, falling back to f64 for any that would not (Seville: none).
-Loading in Chrome takes ~1.5 s end to end (0.3 s to decode 43,749 segments and build the
-index). The pack drops what the resolver never reads (`names.common/rules`, surface, flags,
-level/subclass/width rules), so `show`‑style dumps stay native‑only.
-
-**Do HTTP and WASM agree?** Verdicts, rule traces, ids and every string are identical.
-Coordinates and distances agree to ~1e‑9 relative (sub‑nanometre): the residue is the
-platform's `sin`/`atan2` — wasm32 uses Rust's pure `libm`, macOS uses Apple's. That is a
-useful reminder that a conformance suite for geodesic LR needs tolerances, as GeographicLib's
-`GeodTest.dat` does, rather than byte equality.
-
-macOS note: Apple's `ar` silently drops non‑Mach‑O members, which loses `psm`'s precompiled
-`wasm32.o` (pulled in via `opening-hours → pest → stacker`) and ends in
-`undefined symbol: rust_psm_stack_pointer`. The build script points
-`AR_wasm32_unknown_unknown` at Homebrew's `llvm-ar`; Linux `ar` is fine.
-
-## What Seville doesn't have
-
-Zero `during` (time-scoped) rules in this extract. The evaluator supports them
-(OpenStreetMap `opening_hours` syntax via the `opening-hours` crate, `--time 2026-10-13T08:30`
-or `--time now`) — covered by a unit test, but there is nothing in this city to point it at.
+Building for `wasm32` on macOS needs LLVM's `ar` (`brew install llvm`): Apple's silently drops
+the precompiled `wasm32` object of a transitive dependency (`psm`). The justfile finds it.
 
 ## Direction
 
-Why this exists and where it should go. The full analysis — three candidate shapes
-(reference evaluator + conformance vectors · release linter · docs explainer), precedents,
-governance path, competitor check, evidence and gaps — is in
-[`docs/research/niche-research.md`](docs/research/niche-research.md).
+The aim: be the reference answer to "what does this Overture segment say applies here, for this
+traveller, right now, and which rule said so?"
 
-**The job, in one line.** Be the reference answer to *"what does this Overture segment say
-applies here, for this traveller, right now — and which rule said so?"*
+[OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469) asks for "a reference
+implementation of the rule evaluation … as well as some sort of viewing/evaluation tool". The
+only statement of "last matching rule wins" is a paragraph of prose in the docs; it is in neither
+the JSON Schema nor the Pydantic models, and the official examples have data but no expected
+outcomes. Three layers, in order:
 
-**The gap.** [OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469) asks for
-"a reference implementation of the rule evaluation … as well as some sort of viewing/evaluation
-tool" (open, no replies; it formalises a 2023 community request). The only statement of
-"last matching rule wins" is a paragraph of prose in the docs guide — it is in neither the JSON
-Schema nor the Pydantic models; the official examples contain data but no expected‑outcome
-traces; Bifrost, routers‑org, GOAT and others each implement a subset and document the rest as
-not yet modelled; nothing on crates.io, npm or PyPI does this.
+1. **Library**: pure evaluation with provenance, Rust first, WebAssembly today, Python next.
+2. **Conformance suite**: JSON vectors `(segment, situation) → expected answer` that any
+   implementation can run ([draft](crates/core/tests/vectors)).
+3. **Explorer**: the human-readable face of both, linked from the docs rather than merged into
+   them.
 
-**Three layers, in priority order.**
+Not a router, a downloader or a data pipeline. The research behind this is in
+[docs/research](docs/research): [niche](docs/research/niche-research.md) and
+[naming](docs/research/naming.md).
 
-1. **Library** — pure, I/O‑free: geodesic LR primitives (lon/lat ⇄ fraction, fraction ⇄ point,
-   `between` → sub‑geometry) and rule resolution with provenance (the winner, the losers and
-   why each lost, or an explicit *no rule / implied default*). Rust crate; WASM today, Python
-   bindings later. Every ambiguity in the spec — the `truck`/`bus` taxonomy, per‑class defaults,
-   inverted `between` — becomes a documented, cited, versioned decision, never a silent choice.
-2. **Conformance suite** — JSON vectors `(segment, situation) → expected answer`, with
-   tolerances on the geodesic numbers (the HTTP and WASM builds already differ at 1e‑9 relative
-   from libm alone). This is what turns a tool into infrastructure other implementations run
-   against.
-3. **Explorer** — the web page, as the human‑readable face of 1 + 2; linked from the docs
-   rather than merged into them, per [docs#538](https://github.com/OvertureMaps/docs/issues/538).
+## Credits
 
-**Non‑goals.** Not a router, not a downloader, not a data pipeline, not a release linter.
-Whole‑graph checks (dead rules, `prohibited_transitions` sequence adjacency) are a plausible
-later *consumer* of the library, not its job.
+`overrules` is built by [Francisco Jiménez](https://github.com/jjcfrancisco) in collaboration
+with **Claude** (Anthropic's AI model, Claude Opus 5.5), working as a coding agent. Claude
+carried out the restructuring into a library-first workspace: the crate layout, the typed model
+and error handling, the three-valued evaluator's API, the GeoJSON reader, the tests and
+conformance vectors, the justfile, CI, and the semantics document. Earlier commits were also
+written with AI help, through GitHub Copilot. Francisco sets the direction, reviews every change
+and makes the decisions. From this restructuring on, commits Claude contributed to carry a
+`Co-authored-by: Claude` trailer.
 
-**First move.** One thorough reply on #469: link the live demo, show full provenance on a real
-segment (e.g. the redundant‑rule case in
-[discussion #541](https://github.com/orgs/OvertureMaps/discussions/541)), and lay out the
-taxonomy and `between`‑ordering ambiguities as worked examples.
+## Licence
 
-**Name.** `gers-lr` = GERS (Overture's Global Entity Reference System — every segment's id) +
-LR (linear referencing — positions as fractions along the line, the basis of every `between`).
-`overture-lr` is the obvious public name; `overture-resolve` would say more about the rule half.
+Code: [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
 
-## Layout
-
-| file | what |
-|---|---|
-| `src/lr.rs` | `Measure` (cumulative geodesic metres), `point_at` (fraction → point), `project` (point → fraction; golden-section on geodesic distance with triangle-inequality pruning) |
-| `src/rules.rs` | `Situation`, three-valued `Verdict`, per-scope checks, mode taxonomy, last-match-wins resolution with provenance |
-| `src/model.rs` | serde model of Overture segment rules |
-| `src/reader.rs` | Parquet → `Segment` (WKB via geozero) |
-| `src/index.rs` | `Network`: id/name lookup, R-tree, nearest-segment with exact geodesic projection |
-| `src/query.rs` | shared `Query` → `Answer` used by both the CLI and the web API |
-| `src/api.rs` | the resolver as JSON: `stats · network · find · resolve` — shared by the HTTP server and the WASM build |
-| `src/server.rs` | `serve`: axum routes + embedded single-page app (`web/`) |
-| `src/pack.rs` | `pack`: lossless MessagePack extract for the browser (quantised, delta-encoded, interned connectors) |
-| `src/wasm.rs` | `wasm-bindgen` entry point (`Gers`), built by `scripts/build-web.sh` |
-| `src/main.rs` | CLI: `stats · find · locate · at · resolve · show · audit · serve · pack` |
-
-## Not in scope (yet)
-
-OpenLR encode/decode, cross-release GERS id stability, connector-graph routing.
+Overture transportation data, including the test fixtures, is © OpenStreetMap contributors and
+Overture Maps Foundation, available under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).

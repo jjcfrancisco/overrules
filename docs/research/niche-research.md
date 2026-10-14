@@ -1,4 +1,6 @@
 # Deep Research Report: Product Shape for `gers-lr` in the Overture Maps Ecosystem
+> `gers-lr` has since been renamed **overrules**; see [naming.md](naming.md).
+>
 > Produced 2026-10-13 by an AI research pass (three parallel sub-researches plus direct spot-verification of the highest-stakes claims), kept here as the rationale for the project's direction. References to OMF-internal (private) repositories, tickets and people have been generalised; everything else is as researched, with public citations intact.
 
 
