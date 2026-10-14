@@ -18,6 +18,19 @@ Tests use checked-in fixtures; downloading Seville is only needed for the city e
 fixture regeneration. `just package` verifies that the archive compiles; it does not publish
 the crate or run its test suite. Run `just test` for tests.
 
+| Command | Purpose |
+|---|---|
+| `just fmt` / `just clippy` | Format / lint |
+| `just doc --open` | Read the API docs |
+| `just data` | Download Seville with DuckDB |
+| `just resolve <id> …` | Explain rules on a Seville segment |
+| `just audit` | Measure planar versus geodesic rule-boundary error across Seville |
+| `just fixtures` | Regenerate the committed fixture from the extract |
+
+On the `2026-09-23.1` Seville extract, `just audit` finds 117 of 644 segments with a rule
+boundary more than 5 m off under planar maths; the worst motorway example moves by about
+50 m. The expected rule outcomes are in [`tests/vectors`](tests/vectors).
+
 The separate checks are `just msrv`, `just deny` (requires `cargo-deny`), and
 `just schema-check` (Python 3 and network access).
 

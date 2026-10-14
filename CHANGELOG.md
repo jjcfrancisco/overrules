@@ -1,62 +1,38 @@
 # Changelog
 
-All notable changes are recorded here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
-[Semantic Versioning](https://semver.org/). Before 1.0, minor versions may break the API, and
-any change to [the semantics](docs/semantics.md) is listed here.
+The project follows [Semantic Versioning](https://semver.org/). Before 1.0, minor releases may
+break the API. Changes to rule interpretation are recorded here and in
+[the semantics document](docs/semantics.md).
 
 ## [Unreleased]
 
-### Fixed
-
-- GeoJSON FeatureCollections preserve structured segment errors, including `InvalidRecord`,
-  instead of converting them into strings. Callers can inspect the segment ID and field path.
-
 ### Changed
 
-- Renamed from `gers-lr` to **overrules**, and made a standalone library: the `overrules` crate.
-  The CLI, the map explorer, its HTTP server, the WebAssembly bindings and the browser data pack
-  moved to [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
-- The library does no file reading by default. Reading Parquet is the opt-in `parquet` feature;
-  GeoJSON is always available.
-- Typed model: `Heading`, `TravelMode`, `Dimension`, `Unit`, `Comparison`, `AccessType`,
-  `SpeedUnit` and `Between` replace strings and raw arrays. Unknown travel modes in data are kept
-  as `TravelMode::Other` rather than failing the read.
-- Errors: one `thiserror` enum with `ErrorKind`, for mapping to a transport. A missing input
-  file is `ErrorKind::NotFound`. `GeodesicLine`
-  rejects degenerate geometry instead of panicking.
-- Rule resolution returns owned, serialisable results (`Resolution`, `SetResolution`) with typed
-  scope checks, from `eval::last_match` and `eval::all_matches`. `Answer` gives
-  `access_outcome()`, `speed_limit_rule()` and `transitions_in_force()`.
-- Explanations no longer mention CLI flags.
-- Minimum supported Rust is 1.95, set by a transitive dependency of `opening-hours`.
+- Renamed `gers-lr` to `overrules` and made it a standalone Rust library. The CLI and map
+  demo moved to [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
+- Added typed rules, units and travel modes, and structured errors. Resolution results
+  identify the determining rule and any later rules that could override it.
+- Minimum Rust version: 1.95.
 
 ### Added
 
-- Vehicle thresholds are converted to metres and tonnes from any Overture unit, including the
-  short ton (`st`). `Situation::vehicle_spec("weight=7500kg")` parses dimensions with units,
-  including scientific notation (`weight=1e3kg`).
-- `SCHEMA_VERSION` (2.0.0): the Overture schema the crate reads. Data with a value outside
-  that schema's lists fails with `Error::InvalidRecord`, naming the segment and the field
-  (e.g. `access_restrictions[2].access_type`).
-- A weekly CI job (`scripts/check_schema.py`) compares the crate's lists with the schema of
-  Overture's newest announced release, from the release calendar, and warns ahead of major
-  change months. The `supported_values` example prints the lists it compares.
-- `ALL` constants for `Heading`, `Comparison`, `AccessType` and `SpeedUnit`, and `as_str` for
-  `Comparison` and `SpeedUnit`.
-- Inverted `between` ranges are named in the explanation.
-- Vehicle comparisons treat values within 1e-9 as equal for every operator, so converting a
-  limit between units cannot flip `<` or `>` at the boundary.
-- Reading and writing Overture segments as GeoJSON.
-- `Network::stats`, `Segment::boundaries`, `GeodesicLine::bearing_at`, `GeodesicLine::slice`
-  and `Scoped::scope_text`.
-- Examples: `resolve`, `planar_audit` and `export`.
-- Draft conformance vectors, run by `cargo test`, with a Seville fixture.
-- `docs/semantics.md`: every interpretation the evaluator makes, with sources.
-- A justfile; GitHub Actions CI (lint, tests on three OSes, docs, MSRV, a `wasm32` build,
-  packaging, cargo-deny); Dependabot; dual MIT/Apache-2.0 licence files.
+- GeoJSON reading and writing; opt-in Parquet support.
+- Vehicle-unit conversion and inputs such as `weight=7500kg` or `weight=1e3kg`.
+- Geodesic line slicing and bearings, network statistics and rule-boundary lookup.
+- Declared schema support (`SCHEMA_VERSION`, currently 2.0.0) and a weekly check against
+  Overture's release calendar. Unrecognised strict-enum values fail with the segment and
+  field identified; unknown travel modes are retained.
+- Draft conformance vectors, Seville fixtures and runnable examples.
+
+### Fixed
+
+- Buffered GeoJSON file reads to avoid byte-by-byte file access.
+- Preserved structured record errors inside GeoJSON FeatureCollections. Missing files
+  report `ErrorKind::NotFound`.
+- Vehicle comparisons treat values within 1e-9 as equal for every operator, preventing
+  unit-conversion rounding from crossing an exact limit.
+- Inverted `between` ranges are identified in explanations.
 
 ## gers-lr (pre-release)
 
-The prototype: geodesic linear referencing and the rule resolver as a single crate, with a CLI,
-an HTTP map demo and a static WebAssembly build, on a Seville extract.
+The prototype combined geodesic linear referencing, rule evaluation, a CLI and a web demo.

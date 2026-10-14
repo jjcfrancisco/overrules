@@ -3,37 +3,25 @@
 [![CI](https://github.com/jjcfrancisco/overrules/actions/workflows/ci.yml/badge.svg)](https://github.com/jjcfrancisco/overrules/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#licence)
 
-**A Rust library that says which Overture transportation rules apply here, for this traveller,
-and why.**
+**A Rust library that explains which Overture transportation rules apply to a traveller at a
+position on a segment.** It handles speed limits, access restrictions and prohibited turns
+for pedestrians, cyclists and drivers.
 
-> *Standing at **this point** on **this road**, travelling **this way**, on foot, by bike or at
-> the wheel, **right now**: what is the speed limit, may I pass, which turns are banned, and
-> which rule said so?*
+Overture stores these as ordered lists of rules, scoped by direction, time, travel mode,
+vehicle dimensions and position. For speed and access, the last matching rule wins; for
+prohibited turns, every matching rule applies. Positions are measured along the Earth's
+curved surface (geodesically on WGS84), not with flat longitude/latitude maths.
 
-[Overture Maps](https://overturemaps.org) attaches `speed_limits`, `access_restrictions` and
-`prohibited_transitions` to road segments as **ordered lists of scoped rules**. Each rule may be
-limited by `when` (heading, time, travel mode, purpose, status, vehicle dimensions) and by
-`between` (a stretch of the road, as fractions of its length). The spec says:
+`overrules` reports which rule decided, why each condition matched or failed, and which
+missing facts could change the answer.
 
-- a rule applies when **all** its conditions hold;
-- for access and speed limits, the **last** applicable rule in the list wins;
-- for prohibited transitions, **every** matching rule is in force;
-- otherwise a default applies;
-- `between` fractions are **geodesic on WGS84**, not planar.
-
-Reading only `speed_limits[0]`, or computing positions in the plane, can give the wrong answer.
-`overrules` evaluates scoped rules and shows its working: every rule, every condition, and which
-rule decided. Where you leave a fact out (the time, the vehicle's weight) it says which rules
-*could* change the answer instead of guessing.
-
-> Status: pre-release. Reads Overture schema **2.0.0** (`overrules::SCHEMA_VERSION`). The API is
-> settling and the crate is not on crates.io yet. Python
-> bindings are planned. The map explorer lives in
+> Pre-release: supports Overture schema **2.0.0**. Not published to crates.io yet; the API may
+> change. Python bindings are planned. The map demo lives in
 > [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
 
 ## Use
 
-While the repository is private, this requires GitHub access. For SSH authentication:
+The private repository requires GitHub access:
 
 ```toml
 [dependencies]
@@ -41,179 +29,76 @@ overrules = { git = "ssh://git@github.com/jjcfrancisco/overrules.git", features 
 ```
 
 If Cargo cannot use your SSH credentials, set `CARGO_NET_GIT_FETCH_WITH_CLI=true`.
-Pin a `rev` to keep a consuming application on a specific commit while the API changes.
-The example below uses the Seville extract downloaded by `just data`.
+Pin a `rev` to keep an application on a specific commit.
+
+This example uses the Seville extract downloaded by `just data`:
 
 ```rust,no_run
-use overrules::{Access, AccessType, Heading, Network, Situation, TravelMode};
+use overrules::{Heading, Network, Situation, TravelMode};
 
 fn main() -> Result<(), overrules::Error> {
-    let net = Network::new(overrules::io::read_path("segment.parquet")?); // or .geojson
-    let street = net.lookup("1b946971")?; // GERS id, or a unique prefix
+    let net = Network::new(overrules::io::read_path("data/seville/segment.parquet")?);
+    let segment = net.lookup("e26d3384")?; // GERS id or unique prefix
+    let traveller = Situation::new()
+        .at(0.05)
+        .heading(Heading::Forward)
+        .mode(TravelMode::Car);
 
-    let driver = Situation::new().heading(Heading::Backward).mode(TravelMode::Car);
-    let answer = overrules::resolve(street, &driver)?;
-    assert_eq!(answer.access_outcome(), Access::Rule(AccessType::Denied));
-    assert_eq!(answer.access.determining, Some(0)); // rule #0 decided
-
-    // Residents are excepted by a later rule, and the later rule wins.
-    let answer = overrules::resolve(street, &driver.recognized("as_private"))?;
-    assert_eq!(answer.access.determining, Some(3));
+    let answer = overrules::resolve(segment, &traveller)?;
+    assert_eq!(answer.speed_limit_rule().and_then(|r| r.max_speed).map(|s| s.value), Some(80));
+    assert_eq!(answer.speed_limit.determining, Some(5));
+    assert!(answer.speed_limit.is_settled());
     Ok(())
 }
 ```
 
-| Module | What |
-|---|---|
-| `model` | Typed Overture segments and rules: headings, travel modes and their taxonomy, vehicle selectors with units, `between` ranges. |
-| `lr` | Geodesic linear referencing: fraction → point, point → fraction, bearings, slices. `lr::planar` measures what the planar shortcut would get wrong. |
-| `eval` | Scope checks and rule resolution: last match for single values, all matches for prohibited turns, with reasons. |
-| `Network` | Lookup by GERS id or prefix, by name, and nearest segment to a point. |
-| `io` | GeoJSON (always), Overture GeoParquet (feature `parquet`). |
-
-### Reading an answer
-
-- Rule indices are **zero-based** and refer to the original list.
-- `determining` identifies the last rule known to match. Check `is_settled()` before treating
-  that choice as final: `could_override` lists later rules whose facts are still unknown.
-- `Access::Default` means the application must supply the road-class default; it does **not**
-  mean access is allowed. A missing speed-limit rule likewise supplies no numeric default.
-- For prohibited transitions, inspect both `in_force` and `could_apply`.
-- An omitted purpose or recognised status means it was **not claimed**, rather than unknown.
-
-### Handling input errors
-
-Readers return `Result<Vec<Segment>>`: one invalid record fails the read rather than returning
-a partial network. `InvalidRecord` retains the segment ID and field path for both individual
-GeoJSON features and FeatureCollections, as well as Parquet records.
-
-```rust,no_run
-use overrules::{Error, ErrorKind, io};
-
-match io::read_path("segment.geojson") {
-    Ok(segments) => println!("Loaded {} segments", segments.len()),
-    Err(Error::InvalidRecord { id, path, reason }) => {
-        eprintln!("Segment {id}, field {path}: {reason}");
-    }
-    Err(error) if error.kind() == ErrorKind::NotFound => {
-        eprintln!("Input file not found: {error}");
-    }
-    Err(error) => eprintln!("Could not read segments: {error}"),
-}
-```
-
-`Error` is non-exhaustive, so callers need a fallback arm. `ErrorKind` provides a smaller
-classification for applications that do not need individual fields. See
-[schema support](docs/semantics.md#0-schema-version) for what the readers validate.
-
-## What it shows, on real data
-
-The examples use Seville, Spain (Overture release `2026-09-23.1`, 43,749 segments, 6.8 MB).
-`just data` downloads it with DuckDB. Every case below is also a [conformance
-vector](tests/vectors/seville.json) that `cargo test` runs on a fixture of the same
-segments.
-
-**Same spot, opposite directions, different limits.** Segment `e26d3384` has 8 speed rules
-scoped by both heading and `between`. Rule #0 says 90 km/h, which is what a naive reader sees.
+That segment's first rule says **90 km/h**, but at this position the result is **80 forward**
+or **50 backward**. To see the full explanations:
 
 ```sh
-just resolve e26d3384 --at 0.05 --heading forward  --mode car    # ⇒ max 80 km/h, rule #5
-just resolve e26d3384 --at 0.05 --heading backward --mode car    # ⇒ max 50 km/h, rule #4
+just resolve e26d3384 --at 0.05 --heading forward --mode car
+just resolve e26d3384 --at 0.05 --heading backward --mode car
 ```
 
-**A living street with exceptions.** `Calle Pintor Rosales`: no entry backward, except on foot
-to a destination, or for residents. The travel-mode taxonomy applies: `car ⊂ motor_vehicle ⊂ vehicle`.
+GeoJSON reading is always available; Parquet needs the `parquet` feature. You can also build
+segments directly with `Segment::new`. The library provides geodesic position conversion,
+line slicing, lookup by id/name and nearest-segment search, and compiles to WebAssembly.
 
-```sh
-just resolve 1b946971 --heading backward --mode car                          # ⇒ denied, rule #0
-just resolve 1b946971 --heading backward --mode car --recognized as_private  # ⇒ allowed, rule #3
-just resolve 1b946971 --heading backward --mode foot --using at_destination  # ⇒ allowed, rule #1
-```
+## Reading an answer
 
-**Facts you did not give.** `Avenida del Almendral` is closed to vehicles over 3.5 t.
+- Rule indices are zero-based. `determining` is the last rule **known** to match;
+  `could_override` lists later rules with missing facts. Check `is_settled()` before treating
+  the choice as final.
+- `Access::Default` does **not** mean allowed: the application must supply the road-class
+  default. No speed-limit rule means no numeric limit from the data.
+- Prohibited turns have both `in_force` and `could_apply` lists.
+- Omitted purposes and recognised statuses mean none were claimed, rather than unknown.
+- Readers fail the whole read on an invalid record. `Error::InvalidRecord` identifies the
+  segment and field; see the `Error` API docs for an example (`just doc --open`).
 
-```sh
-just resolve 645f3ec7 --heading forward --mode truck --vehicle weight=12000kg  # ⇒ denied, rule #1
-just resolve 645f3ec7 --heading forward --mode truck                           # ⇒ default, but rule #1 could override
-```
-
-**What planar maths would cost a city.** `just audit` moves every `between` boundary in Seville
-from where Overture means it to where a planar implementation would put it:
-
-```text
-segments with between-scoped rules : 644
-boundary fractions checked         : 1832
-mean displacement                  : 1.97 m
-histogram                          : <1 m 1317  · 1–5 m 297  · 5–10 m 111  · 10–25 m 96  · ≥25 m 11
-segments with a boundary > 5 m off : 117
-```
-
-18% of Seville's `between`-scoped segments would have a rule boundary misplaced by more than
-5 m. A speed-limit change on the SE-40 motorway would move by 50 m.
-
-## Semantics
-
-Where the spec is silent, `overrules` makes a documented choice rather than a silent one: the
-travel-mode tree (where `truck` and `bus` sit), missing facts, `using`/`recognized` claims,
-inverted `between` ranges, units such as the short ton, and what "default" means.
-All of it is in **[docs/semantics.md](docs/semantics.md)**.
-
-The [conformance vectors](tests/vectors) are a draft of a shared test suite: JSON
-cases `(segment, situation) → expected answer` that any implementation can run.
+The supported fields, schema-version limits and interpretation decisions are documented in
+**[docs/semantics.md](docs/semantics.md)**. The [draft conformance vectors](tests/vectors)
+provide shared test cases for other implementations.
 
 ## Development
 
-Everything runs through [`just`](https://github.com/casey/just):
+Run `just test` for tests, `just ci` for local checks, or `just` to list recipes. Tests use
+checked-in fixtures; no data download is needed. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup, other checks and schema-update instructions.
 
-| recipe | what |
-|---|---|
-| `just test` | unit tests, conformance vectors and doc tests |
-| `just clippy` · `just fmt` | lint (pedantic, warnings are errors) and format |
-| `just check-wasm` | the library still compiles for `wasm32` |
-| `just package` | create and compile the crate archive without publishing |
-| `just ci` | format, lint, feature checks, tests, docs, wasm32 and packaging |
-| `just schema-check` | compare the library with the schema of Overture's newest announced release (CI runs it weekly) |
-| `just msrv` | build with the minimum supported Rust (1.95) |
-| `just data` · `just fixtures` | download Seville; rebuild the test fixture from it |
-| `just resolve <id> …` · `just audit` | the examples above, on the Seville extract |
-
-Checking for `wasm32` on macOS needs LLVM's `ar` (`brew install llvm`): Apple's silently drops
-the precompiled `wasm32` object of a transitive dependency (`psm`). The justfile finds it.
-
-Tests use the committed fixture and do not need the full Seville download. The schema check
-needs Python 3 and network access. MSRV and dependency checks run separately from `just ci`.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to handle a schema-check failure.
-
-## Direction
-
-The aim: be the reference answer to "what does this Overture segment say applies here, for this
-traveller, right now, and which rule said so?"
-
-[OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469) asks for "a reference
-implementation of the rule evaluation … as well as some sort of viewing/evaluation tool". The
-only statement of "last matching rule wins" is a paragraph of prose in the docs; it is in neither
-the JSON Schema nor the Pydantic models, and the official examples have data but no expected
-outcomes. Three layers:
-
-1. **Library** (this repository): evaluation with provenance; Rust first, Python next.
-2. **Conformance suite**: shared JSON vectors ([draft](tests/vectors)).
-3. **Explorer** ([overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer)):
-   the library on a map, compiled to WebAssembly.
-
-Not a router, a downloader or a data pipeline. The research behind this is in
-[docs/research](docs/research).
+The goal is a reference evaluator and shared test suite, addressing
+[OvertureMaps/data#469](https://github.com/OvertureMaps/data/issues/469)—not a router or data
+pipeline. [Historical research](docs/research) records the reasoning behind the project.
 
 ## Credits
 
-`overrules` is developed by [Francisco Jiménez](https://github.com/jjcfrancisco) with AI coding
-assistance. Git history records earlier contributions with Copilot and Claude co-author
-trailers. The subsequent FeatureCollection error fix and documentation updates were assisted
-by **GPT-6 Astra**, through GitHub Copilot in OpenCode. Francisco sets the direction and makes
-the decisions. AI-assisted commits should identify the assistant used for that work.
+Developed by [Francisco Jiménez](https://github.com/jjcfrancisco) with AI coding assistance.
+Git history records Copilot and Claude contributions; subsequent fixes and documentation
+were assisted by GPT models through GitHub Copilot in OpenCode. Francisco sets the direction
+and makes the decisions; AI-assisted commits identify their co-author.
 
 ## Licence
 
 Code: [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
-
-Overture transportation data, including the test fixtures, is © OpenStreetMap contributors and
-Overture Maps Foundation, available under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+Overture transportation data, including the test fixtures, is © OpenStreetMap contributors
+and Overture Maps Foundation, under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).

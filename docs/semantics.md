@@ -33,10 +33,8 @@ Overture announces which schema each release uses in its
 [release calendar](https://docs.overturemaps.org/release-calendar.json), ahead of the release,
 and in each release's [STAC catalogue](https://stac.overturemaps.org) entry. A weekly CI job
 (`scripts/check_schema.py`, `just schema-check`) compares the lists here with the schema of the
-latest-dated calendar entry with a non-null schema version. It fails on a version mismatch or
-changed enum values, and adds a warning for a major-change release within 60 days. Entries with
-no announced schema version cannot yet be compared. Early detection depends on when the calendar
-and schema tag become available and when the job next runs.
+latest-dated calendar entry with a non-null schema version. Early detection depends on when
+the calendar and schema tag become available and when the job next runs.
 
 The check covers eight enum lists, not field additions, requiredness, numeric bounds, or rule
 semantics. Matching lists alone do not establish compatibility with a new schema. See

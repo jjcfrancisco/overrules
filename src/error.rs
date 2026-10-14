@@ -4,6 +4,25 @@
 ///
 /// Variants describe *what* went wrong. Front ends that need to decide *whose* fault it
 /// was (a 400 or a 500, say) should ask [`Error::kind`] instead of matching variants.
+///
+/// Readers fail the whole read rather than returning a partial network. Property decoding
+/// errors retain the segment ID and field path, including inside GeoJSON collections.
+/// This enum is non-exhaustive, so callers need a fallback arm:
+///
+/// ```no_run
+/// use overrules::{Error, ErrorKind, io};
+///
+/// match io::read_path("segment.geojson") {
+///     Ok(segments) => println!("Loaded {} segments", segments.len()),
+///     Err(Error::InvalidRecord { id, path, reason }) => {
+///         eprintln!("Segment {id}, field {path}: {reason}");
+///     }
+///     Err(error) if error.kind() == ErrorKind::NotFound => {
+///         eprintln!("Input file not found: {error}");
+///     }
+///     Err(error) => eprintln!("Could not read segments: {error}"),
+/// }
+/// ```
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
