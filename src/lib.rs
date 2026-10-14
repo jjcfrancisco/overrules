@@ -83,7 +83,7 @@ pub use model::{AccessType, Dimension, Heading, Segment, TravelMode};
 pub use network::{Hit, Network, RuleStats, Stats};
 pub use situation::Situation;
 
-/// Compiles the README's example as a doc test.
+/// Compiles the README's Rust examples as doc tests.
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
 pub struct ReadmeDoctests;

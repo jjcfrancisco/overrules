@@ -36,20 +36,23 @@ rule decided. Where you leave a fact out (the time, the vehicle's weight) it say
 overrules = { git = "https://github.com/jjcfrancisco/overrules", features = ["parquet"] }
 ```
 
-```rust
+```rust,no_run
 use overrules::{Access, AccessType, Heading, Network, Situation, TravelMode};
 
-let net = Network::new(overrules::io::read_path("segment.parquet")?); // or .geojson
-let street = net.lookup("1b946971")?; // GERS id, or a unique prefix
+fn main() -> Result<(), overrules::Error> {
+    let net = Network::new(overrules::io::read_path("segment.parquet")?); // or .geojson
+    let street = net.lookup("1b946971")?; // GERS id, or a unique prefix
 
-let driver = Situation::new().heading(Heading::Backward).mode(TravelMode::Car);
-let answer = overrules::resolve(street, &driver)?;
-assert_eq!(answer.access_outcome(), Access::Rule(AccessType::Denied));
-assert_eq!(answer.access.determining, Some(0)); // rule #0 decided
+    let driver = Situation::new().heading(Heading::Backward).mode(TravelMode::Car);
+    let answer = overrules::resolve(street, &driver)?;
+    assert_eq!(answer.access_outcome(), Access::Rule(AccessType::Denied));
+    assert_eq!(answer.access.determining, Some(0)); // rule #0 decided
 
-// Residents are excepted by a later rule, and the later rule wins.
-let answer = overrules::resolve(street, &driver.recognized("as_private"))?;
-assert_eq!(answer.access.determining, Some(3));
+    // Residents are excepted by a later rule, and the later rule wins.
+    let answer = overrules::resolve(street, &driver.recognized("as_private"))?;
+    assert_eq!(answer.access.determining, Some(3));
+    Ok(())
+}
 ```
 
 | Module | What |
@@ -68,7 +71,7 @@ input or data, and compiles to WebAssembly.
 
 The examples use Seville, Spain (Overture release `2026-09-23.1`, 43,749 segments, 6.8 MB).
 `just data` downloads it with DuckDB. Every case below is also a [conformance
-vector](crates/core/tests/vectors/seville.json) that `cargo test` runs on a fixture of the same
+vector](tests/vectors/seville.json) that `cargo test` runs on a fixture of the same
 segments.
 
 **Same spot, opposite directions, different limits.** Segment `e26d3384` has 8 speed rules
@@ -98,7 +101,7 @@ just resolve 645f3ec7 --heading forward --mode truck                           #
 **What planar maths would cost a city.** `just audit` moves every `between` boundary in Seville
 from where Overture means it to where a planar implementation would put it:
 
-```
+```text
 segments with between-scoped rules : 644
 boundary fractions checked         : 1832
 mean displacement                  : 1.97 m
@@ -116,7 +119,7 @@ travel-mode tree (where `truck` and `bus` sit), missing facts, `using`/`recogniz
 inverted `between` ranges, units such as the short ton, and what "default" means.
 All of it is in **[docs/semantics.md](docs/semantics.md)**.
 
-The [conformance vectors](crates/core/tests/vectors) are a draft of a shared test suite: JSON
+The [conformance vectors](tests/vectors) are a draft of a shared test suite: JSON
 cases `(segment, situation) → expected answer` that any implementation can run.
 
 ## Development
@@ -149,7 +152,7 @@ the JSON Schema nor the Pydantic models, and the official examples have data but
 outcomes. Three layers:
 
 1. **Library** (this repository): evaluation with provenance; Rust first, Python next.
-2. **Conformance suite**: shared JSON vectors ([draft](crates/core/tests/vectors)).
+2. **Conformance suite**: shared JSON vectors ([draft](tests/vectors)).
 3. **Explorer** ([overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer)):
    the library on a map, compiled to WebAssembly.
 

@@ -24,7 +24,7 @@ wasm_env := if llvm_ar != '' { 'AR_wasm32_unknown_unknown=' + llvm_ar } else { '
 
 # Run all tests: unit, conformance vectors, doc tests
 test *args:
-    cargo test --workspace --all-features {{ args }}
+    cargo test --all-features {{ args }}
 
 # Format the code
 fmt:
@@ -36,25 +36,25 @@ fmt-check:
 
 # Lint with clippy; warnings are errors
 clippy:
-    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --all-features -- -D warnings
 
 # Check each feature set compiles on its own
 check-features:
-    cargo check -p overrules --no-default-features
-    cargo check -p overrules --all-features --all-targets
+    cargo check --no-default-features
+    cargo check --all-features --all-targets
 
 # Check the library still compiles for the browser (wasm32), as the explorer needs
 check-wasm: _wasm-target
-    {{ wasm_env }} cargo clippy -p overrules --target {{ wasm_target }} -- -D warnings
+    {{ wasm_env }} cargo clippy --target {{ wasm_target }} -- -D warnings
 
 # Build the API docs; broken links are errors
 doc *args:
-    RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --all-features {{ args }}
+    RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features {{ args }}
 
 # Check the minimum supported Rust version still builds
 msrv:
     rustup toolchain list | grep -q '^{{ msrv }}' || rustup toolchain install {{ msrv }} --profile minimal
-    cargo +{{ msrv }} check --workspace --all-targets --all-features
+    cargo +{{ msrv }} check --all-targets --all-features
 
 # Check licences, advisories and sources (needs cargo-deny)
 deny:
@@ -62,8 +62,8 @@ deny:
 
 # Build the crate exactly as crates.io would receive it, and test that
 package:
-    cargo package -p overrules --allow-dirty
-    @echo; cargo package -p overrules --allow-dirty --list | sed 's/^/  /'
+    cargo package --allow-dirty
+    @echo; cargo package --allow-dirty --list | sed 's/^/  /'
 
 # Everything CI runs
 ci: fmt-check clippy check-features test doc check-wasm package
@@ -79,7 +79,7 @@ data:
 fixtures:
     cargo run --release -q --example export --features parquet -- {{ seville }} \
         99698abc e26d3384 1b946971 645f3ec7 a022afe5 55c99d8b \
-        > crates/core/tests/fixtures/seville.geojson
+        > tests/fixtures/seville.geojson
 
 # Resolve on the Seville extract, e.g. `just resolve e26d3384 --at 0.05 --heading forward --mode car`
 resolve *args:

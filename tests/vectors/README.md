@@ -36,4 +36,4 @@ run, so they agree on what the data means. The format is a draft and will change
 - `could_override` lists undetermined rules that would win if their missing facts held.
 - `value: null` for access means no rule matched and the class default applies.
 
-The semantics behind each expectation are in [`docs/semantics.md`](../../../../docs/semantics.md).
+The semantics behind each expectation are in [`docs/semantics.md`](../../docs/semantics.md).

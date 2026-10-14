@@ -1,11 +1,9 @@
-[workspace]
-resolver = "3"
-# One crate today; Python bindings will join it here.
-members = ["crates/core"]
-
-[workspace.package]
+[package]
+name = "overrules"
 version = "0.1.0"
 authors = ["Francisco Jiménez <jjcfrank@gmail.com>"]
+description = "Evaluate Overture Maps transportation rules (speed limits, access, turn restrictions) for any traveller, with provenance, on geodesic linear references"
+readme = "README.md"
 edition = "2024"
 # Set by compact-calendar (via opening-hours), which uses VecDeque::push_back_mut.
 rust-version = "1.95"
@@ -14,25 +12,47 @@ repository = "https://github.com/jjcfrancisco/overrules"
 homepage = "https://github.com/jjcfrancisco/overrules"
 keywords = ["overture", "gis", "linear-referencing", "routing", "geodesic"]
 categories = ["science::geo"]
+include = ["/src", "/examples", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE-*"]
 
-[workspace.dependencies]
-base64 = "0.23"
+[features]
+default = []
+## Read Overture `segment` GeoParquet files.
+parquet = ["dep:base64", "dep:geozero", "dep:parquet"]
+
+[dependencies]
+base64 = { version = "0.23", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
 geo = "0.33"
-geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"] }
+geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"], optional = true }
 opening-hours = "2"
-parquet = { version = "60", default-features = false, features = ["json", "snap", "zstd"] }
+parquet = { version = "60", default-features = false, features = ["json", "snap", "zstd"], optional = true }
 rstar = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 
-[workspace.lints.rust]
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[[example]]
+name = "resolve"
+required-features = ["parquet"]
+
+[[example]]
+name = "planar_audit"
+required-features = ["parquet"]
+
+[[example]]
+name = "export"
+required-features = ["parquet"]
+
+[lints.rust]
 unsafe_code = "forbid"
 unused_qualifications = "warn"
 missing_debug_implementations = "warn"
 
-[workspace.lints.clippy]
+[lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 # Restrictions worth having in a library that will grow Python bindings.
 dbg_macro = "warn"

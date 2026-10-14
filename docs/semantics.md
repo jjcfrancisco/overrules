@@ -84,7 +84,7 @@ resident-only exception would leave every answer unsettled.
   as the same stretch in order, and the explanation says it was written inverted.
 - Positions are fractions of the segment's **geodesic length on WGS84**, as the guide defines
   them. `overrules` never uses planar (lon/lat as x/y) maths to evaluate a rule; the
-  [`lr::planar`](../crates/core/src/lr/planar.rs) module exists only to measure how far off
+  [`lr::planar`](../src/lr/planar.rs) module exists only to measure how far off
   planar maths would be.
 
 ## 6. Vehicle conditions

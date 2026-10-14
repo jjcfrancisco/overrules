@@ -19,7 +19,7 @@ just ci         # everything CI runs, before you push
 The rule semantics are the point of this project, so changes to them need care:
 
 - If you change how a rule is evaluated, update [`docs/semantics.md`](docs/semantics.md) and
-  add or adjust a case in [`crates/core/tests/vectors`](crates/core/tests/vectors).
+  add or adjust a case in [`tests/vectors`](tests/vectors).
 - Cite the source (the Overture guide, schema, or a maintainer's answer) for any
   interpretation.
 - Record it in [`CHANGELOG.md`](CHANGELOG.md).
