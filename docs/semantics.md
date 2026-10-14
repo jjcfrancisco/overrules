@@ -96,7 +96,9 @@ resident-only exception would leave every answer unsettled.
 - A threshold with no unit is read as metres or tonnes.
 - A unit that cannot measure the dimension (feet for a weight) makes the condition
   `undetermined`, with the reason, rather than silently wrong.
-- `equal` holds within 1e-9.
+- Values within 1e-9 of each other count as equal for **every** operator, so `>` and `<` are
+  strict by more than rounding: a rule `height < 12 ft` (3.6576000000000004 m) does not match
+  a vehicle given as 3.6576 m.
 
 ## 7. `heading` and `during`
 

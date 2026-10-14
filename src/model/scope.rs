@@ -432,7 +432,7 @@ pub enum Comparison {
     GreaterThan,
     /// `>=`
     GreaterThanEqual,
-    /// `==` (within 1e-9)
+    /// `==`
     Equal,
     /// `<`
     LessThan,
@@ -442,15 +442,23 @@ pub enum Comparison {
 
 impl Comparison {
     /// Whether `lhs <op> rhs` holds.
+    ///
+    /// Values within [`Comparison::TOLERANCE`] of each other count as equal for every
+    /// operator, so a limit converted between units (12 ft is `3.6576000000000004` m) is not
+    /// crossed by rounding alone.
     pub fn holds(self, lhs: f64, rhs: f64) -> bool {
+        let equal = (lhs - rhs).abs() <= Self::TOLERANCE;
         match self {
-            Self::GreaterThan => lhs > rhs,
-            Self::GreaterThanEqual => lhs >= rhs,
-            Self::Equal => (lhs - rhs).abs() < 1e-9,
-            Self::LessThan => lhs < rhs,
-            Self::LessThanEqual => lhs <= rhs,
+            Self::GreaterThan => lhs > rhs && !equal,
+            Self::GreaterThanEqual => lhs > rhs || equal,
+            Self::Equal => equal,
+            Self::LessThan => lhs < rhs && !equal,
+            Self::LessThanEqual => lhs < rhs || equal,
         }
     }
+
+    /// How close, in metres, tonnes or a count, two values must be to count as equal.
+    pub const TOLERANCE: f64 = 1e-9;
 
     /// The operator as a symbol, e.g. `>=`.
     pub fn symbol(self) -> &'static str {
@@ -618,6 +626,25 @@ mod tests {
             ..sel
         };
         assert!(wrong.canonical_value().is_err());
+    }
+
+    #[test]
+    fn comparisons_are_not_flipped_by_unit_rounding() {
+        let twelve_ft = Unit::Ft.to_canonical(12.0);
+        assert_ne!(twelve_ft, 3.6576, "the rounding this test guards against");
+        for op in [Comparison::LessThan, Comparison::GreaterThan] {
+            assert!(!op.holds(3.6576, twelve_ft), "{op:?}");
+            assert!(!op.holds(twelve_ft, 3.6576), "{op:?}");
+        }
+        for op in [
+            Comparison::Equal,
+            Comparison::LessThanEqual,
+            Comparison::GreaterThanEqual,
+        ] {
+            assert!(op.holds(3.6576, twelve_ft), "{op:?}");
+        }
+        assert!(Comparison::GreaterThan.holds(3.66, twelve_ft));
+        assert!(Comparison::LessThan.holds(3.65, twelve_ft));
     }
 
     #[test]

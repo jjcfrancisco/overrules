@@ -14,6 +14,9 @@ use crate::model::{Record, Segment};
 use crate::{Error, Result};
 
 /// Reads segments from GeoJSON text.
+///
+/// Pass a buffered reader (e.g. [`std::io::BufReader`] around a file): `serde_json` reads
+/// byte by byte, which is many times slower on an unbuffered file.
 pub fn read(reader: impl Read) -> Result<Vec<Segment>> {
     from_value(serde_json::from_reader(reader)?)
 }

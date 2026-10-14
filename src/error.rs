@@ -75,6 +75,7 @@ impl Error {
             | Self::FractionOutOfRange(_)
             | Self::Invalid { .. }
             | Self::EmptyNetwork => ErrorKind::InvalidInput,
+            Self::Io(e) if e.kind() == std::io::ErrorKind::NotFound => ErrorKind::NotFound,
             Self::InvalidGeometry { .. } | Self::GeoJson(_) | Self::Io(_) | Self::Json(_) => {
                 ErrorKind::Data
             }

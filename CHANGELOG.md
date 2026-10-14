@@ -17,7 +17,8 @@ any change to [the semantics](docs/semantics.md) is listed here.
 - Typed model: `Heading`, `TravelMode`, `Dimension`, `Unit`, `Comparison`, `AccessType`,
   `SpeedUnit` and `Between` replace strings and raw arrays. Unknown travel modes in data are kept
   as `TravelMode::Other` rather than failing the read.
-- Errors: one `thiserror` enum with `ErrorKind`, for mapping to a transport. `GeodesicLine`
+- Errors: one `thiserror` enum with `ErrorKind`, for mapping to a transport. A missing input
+  file is `ErrorKind::NotFound`. `GeodesicLine`
   rejects degenerate geometry instead of panicking.
 - Rule resolution returns owned, serialisable results (`Resolution`, `SetResolution`) with typed
   scope checks, from `eval::last_match` and `eval::all_matches`. `Answer` gives
@@ -28,8 +29,11 @@ any change to [the semantics](docs/semantics.md) is listed here.
 ### Added
 
 - Vehicle thresholds are converted to metres and tonnes from any Overture unit, including the
-  short ton (`st`). `Situation::vehicle_spec("weight=7500kg")` parses dimensions with units.
+  short ton (`st`). `Situation::vehicle_spec("weight=7500kg")` parses dimensions with units,
+  including scientific notation (`weight=1e3kg`).
 - Inverted `between` ranges are named in the explanation.
+- Vehicle comparisons treat values within 1e-9 as equal for every operator, so converting a
+  limit between units cannot flip `<` or `>` at the boundary.
 - Reading and writing Overture segments as GeoJSON.
 - `Network::stats`, `Segment::boundaries`, `GeodesicLine::bearing_at`, `GeodesicLine::slice`
   and `Scoped::scope_text`.

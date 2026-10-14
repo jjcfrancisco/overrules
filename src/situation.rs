@@ -122,10 +122,9 @@ impl Situation {
             .ok_or_else(|| bad("expected dimension=value, e.g. weight=3.5"))?;
         let dimension: Dimension = key.trim().parse()?;
         let value = value.trim();
-        let split = value
-            .find(|c: char| c.is_ascii_alphabetic())
-            .unwrap_or(value.len());
-        let (number, unit) = value.split_at(split);
+        // The unit is the trailing run of letters, so `1e3kg` reads as 1e3 kg.
+        let number = value.trim_end_matches(|c: char| c.is_ascii_alphabetic());
+        let unit = &value[number.len()..];
         let number: f64 = number
             .trim()
             .parse()
@@ -200,6 +199,8 @@ mod tests {
         assert!((s.vehicle[&Dimension::Weight] - 7.5).abs() < 1e-12);
         assert_eq!(s.vehicle[&Dimension::Height], 4.2);
         assert_eq!(s.vehicle[&Dimension::AxleCount], 3.0);
+        let s = Situation::new().vehicle_spec("weight=1e3kg").unwrap();
+        assert!((s.vehicle[&Dimension::Weight] - 1.0).abs() < 1e-12);
         for bad in [
             "weight",
             "mass=3",

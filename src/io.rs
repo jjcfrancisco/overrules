@@ -21,7 +21,9 @@ pub fn read_path(path: impl AsRef<Path>) -> Result<Vec<Segment>> {
         .and_then(|e| e.to_str())
         .map(str::to_ascii_lowercase);
     match ext.as_deref() {
-        Some("geojson" | "json") => geojson::read(std::fs::File::open(path)?),
+        Some("geojson" | "json") => {
+            geojson::read(std::io::BufReader::new(std::fs::File::open(path)?))
+        }
         #[cfg(feature = "parquet")]
         Some("parquet") => parquet::read_path(path),
         _ => Err(Error::invalid(
@@ -33,5 +35,27 @@ pub fn read_path(path: impl AsRef<Path>) -> Result<Vec<Segment>> {
                 "expected a .geojson or .json file (build with feature `parquet` for Parquet)"
             },
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ErrorKind;
+
+    #[test]
+    fn a_missing_file_is_not_found() {
+        let err = read_path("no/such/segments.geojson").unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn reads_the_fixture() {
+        let segments = read_path(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/seville.geojson"
+        ))
+        .unwrap();
+        assert_eq!(segments.len(), 6);
     }
 }
