@@ -4,7 +4,7 @@ Thanks for helping. Issues and pull requests are welcome.
 
 ## Setup
 
-You need Rust (stable; the minimum is in `Cargo.toml`) and [`just`](https://github.com/casey/just).
+You need stable Rust (the minimum is in `Cargo.toml`) and [`just`](https://github.com/casey/just).
 For the demo data, [DuckDB](https://duckdb.org). For `just check-wasm`, the
 `wasm32-unknown-unknown` target and, on macOS, `brew install llvm`.
 
@@ -14,8 +14,8 @@ just test       # what you will run most
 just ci         # format, lint, feature checks, tests, docs, wasm32 and packaging
 ```
 
-Tests use checked-in fixtures; downloading Seville is only needed for the city examples and
-fixture regeneration. `just package` verifies that the archive compiles; it does not publish
+Tests use checked-in fixtures. Downloading Seville is only needed for the city examples and
+fixture regeneration. `just package` verifies that the archive compiles. It does not publish
 the crate or run its test suite. Run `just test` for tests.
 
 | Command | Purpose |
@@ -28,7 +28,7 @@ the crate or run its test suite. Run `just test` for tests.
 | `just fixtures` | Regenerate the committed fixture from the extract |
 
 On the `2026-09-23.1` Seville extract, `just audit` finds 117 of 644 segments with a rule
-boundary more than 5 m off under planar maths; the worst motorway example moves by about
+boundary more than 5 m off under planar maths. The worst motorway example moves by about
 50 m. The expected rule outcomes are in [`tests/vectors`](tests/vectors).
 
 The separate checks are `just msrv`, `just deny` (requires `cargo-deny`), and
@@ -58,7 +58,7 @@ The rule semantics are the point of this project, so changes to them need care:
 
 A major-change-month warning is a reminder to review upcoming changes, not evidence that the
 current library is incompatible. Future releases with no schema version are skipped for enum
-comparison. The scheduled job runs each Monday; it also supports manual execution on GitHub.
+comparison. The scheduled job runs each Monday and can also be run manually on GitHub.
 
 ## Style
 

@@ -8,7 +8,7 @@ run, so they agree on what the data means. The format is a draft and will change
 
 ```jsonc
 {
-  "fixture": "../fixtures/seville.geojson",   // relative to this file; GeoJSON or Parquet
+  "fixture": "../fixtures/seville.geojson",   // relative to this file, GeoJSON or Parquet
   "cases": [
     {
       "name": "what this case shows",

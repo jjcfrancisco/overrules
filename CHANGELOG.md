@@ -16,12 +16,12 @@ break the API. Changes to rule interpretation are recorded here and in
 
 ### Added
 
-- GeoJSON reading and writing; opt-in Parquet support.
+- GeoJSON reading and writing, with opt-in Parquet support.
 - Vehicle-unit conversion and inputs such as `weight=7500kg` or `weight=1e3kg`.
 - Geodesic line slicing and bearings, network statistics and rule-boundary lookup.
 - Declared schema support (`SCHEMA_VERSION`, currently 2.0.0) and a weekly check against
   Overture's release calendar. Unrecognised strict-enum values fail with the segment and
-  field identified; unknown travel modes are retained.
+  field identified. Unknown travel modes are retained.
 - Draft conformance vectors, Seville fixtures and runnable examples.
 
 ### Fixed

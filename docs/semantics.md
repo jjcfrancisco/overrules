@@ -21,7 +21,7 @@ file fails to load with an error naming the segment and the field, e.g.
 Travel modes are the one exception (§3).
 
 This describes the **supported fields**, not full schema validation. Readers ignore unmodelled
-fields; names, classes, purposes and statuses remain strings. Numeric schema constraints are
+fields. Names, classes, purposes and statuses remain strings. Numeric schema constraints are
 not all enforced, and inverted ranges are deliberately accepted (§5). A successful read does
 not certify that the input conforms to the complete Overture schema.
 
@@ -42,7 +42,7 @@ semantics. Matching lists alone do not establish compatibility with a new schema
 
 ## 1. Resolving a rule list
 
-The guide states this explicitly; `overrules` implements it as written.
+The guide states this explicitly, and `overrules` implements it as written.
 
 1. A rule **matches** when every one of its scoping conditions holds. Conditions are combined with AND.
 2. The **determining rule** is the *last* matching rule in the list.
@@ -114,7 +114,7 @@ resident-only exception would leave every answer unsettled.
   says so). The newer Pydantic models reject inverted ranges. **Choice:** an inverted range is read
   as the same stretch in order, and the explanation says it was written inverted.
 - Positions are fractions of the segment's **geodesic length on WGS84**, as the guide defines
-  them. `overrules` never uses planar (lon/lat as x/y) maths to evaluate a rule; the
+  them. `overrules` never uses planar (lon/lat as x/y) maths to evaluate a rule. The
   [`lr::planar`](../src/lr/planar.rs) module exists only to measure how far off
   planar maths would be.
 
@@ -123,7 +123,7 @@ resident-only exception would leave every answer unsettled.
 - The traveller's dimensions are compared in **metres**, **metric tonnes**, or a plain count
   (`axle_count`). A rule's threshold is converted to those units first.
 - The schema's `st` is the **short ton** (2,000 lb) and `lt` the **long ton** (2,240 lb).
-  Neither is the stone. The Pydantic model's description of `lt` says "2,400 pounds"; the
+  Neither is the stone. The Pydantic model's description of `lt` says "2,400 pounds". The
   long ton is 2,240 lb, and that is what `overrules` uses.
 - A threshold with no unit is read as metres or tonnes.
 - A unit that cannot measure the dimension (feet for a weight) makes the condition
@@ -146,7 +146,7 @@ resident-only exception would leave every answer unsettled.
 |---|---|
 | `access_restrictions` | `Access::Default`. Overture says "the default restrictions for the road class govern" but publishes no table of them ([discussion #307](https://github.com/orgs/OvertureMaps/discussions/307)). `overrules` does not invent one: a footway with no rules is not therefore open to cars. |
 | `speed_limits` | No limit from the data. Fall back to the jurisdiction's default for the class. |
-| `prohibited_transitions` | No explicit prohibition is known to match. Undetermined rules remain in `could_apply`; access restrictions and network connectivity must still be considered by the application. |
+| `prohibited_transitions` | No explicit prohibition is known to match. Undetermined rules remain in `could_apply`. Access restrictions and network connectivity must still be considered by the application. |
 
 ## Not yet covered
 
