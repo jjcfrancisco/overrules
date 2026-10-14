@@ -1,0 +1,40 @@
+[package]
+name = "overrules"
+description = "Evaluate Overture Maps transportation rules (speed limits, access, turn restrictions) for any traveller, with provenance, on geodesic linear references"
+readme = "README.md"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+## Read Overture `segment` GeoParquet files.
+parquet = ["dep:base64", "dep:geozero", "dep:parquet"]
+## Compact, lossless MessagePack snapshots of a network (used by the browser build).
+pack = ["dep:rmp-serde"]
+
+[dependencies]
+base64 = { workspace = true, optional = true }
+chrono.workspace = true
+geo.workspace = true
+geozero = { workspace = true, optional = true }
+opening-hours.workspace = true
+parquet = { workspace = true, optional = true }
+rmp-serde = { workspace = true, optional = true }
+rstar.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
