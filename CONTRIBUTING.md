@@ -11,8 +11,15 @@ For the demo data, [DuckDB](https://duckdb.org). For `just check-wasm`, the
 ```sh
 just            # list recipes
 just test       # what you will run most
-just ci         # everything CI runs, before you push
+just ci         # format, lint, feature checks, tests, docs, wasm32 and packaging
 ```
+
+Tests use checked-in fixtures; downloading Seville is only needed for the city examples and
+fixture regeneration. `just package` verifies that the archive compiles; it does not publish
+the crate or run its test suite. Run `just test` for tests.
+
+The separate checks are `just msrv`, `just deny` (requires `cargo-deny`), and
+`just schema-check` (Python 3 and network access).
 
 ## Changing behaviour
 
@@ -24,11 +31,29 @@ The rule semantics are the point of this project, so changes to them need care:
   interpretation.
 - Record it in [`CHANGELOG.md`](CHANGELOG.md).
 
+## When the schema check fails
+
+1. Run `just schema-check` and read the release date, schema version and enum differences.
+   A download or Cargo failure means the check could not run, rather than demonstrating a
+   schema incompatibility.
+2. Inspect the new tagged schema and its release notes, including changes to fields,
+   constraints and scoping behaviour. The automatic check compares only eight enum lists.
+3. Update the model and evaluator where needed, add representative test cases, and document
+   changed interpretations in `docs/semantics.md` and `CHANGELOG.md`.
+4. Update `SCHEMA_VERSION` only after reviewing compatibility. Keep the version named in the
+   README and semantics document in sync. Re-run `just schema-check` and `just ci`.
+
+A major-change-month warning is a reminder to review upcoming changes, not evidence that the
+current library is incompatible. Future releases with no schema version are skipped for enum
+comparison. The scheduled job runs each Monday; it also supports manual execution on GitHub.
+
 ## Style
 
 - `cargo fmt`, and clippy with pedantic lints, warnings as errors (`just clippy`).
 - Library crates return their own `Error` (`thiserror`), never `anyhow`, and never panic on bad
   input or data.
-- Commits use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
-  `docs:`…).
-- Work done with an AI assistant is welcome. Say so with a `Co-authored-by:` trailer.
+- Commit and PR titles use lowercase [Conventional Commits](https://www.conventionalcommits.org/)
+  with a scope, e.g. `fix(io): preserve structured collection errors`.
+- Sign off each commit with `git commit -s` (DCO sign-off).
+- Work done with an AI assistant is welcome. Identify the assistant actually used with a
+  `Co-authored-by:` trailer, in addition to the human sign-off.

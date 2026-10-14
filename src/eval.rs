@@ -166,6 +166,9 @@ pub fn evaluate<R: Scoped + ?Sized>(index: usize, rule: &R, s: &Situation) -> Ru
 }
 
 /// Resolves a single-valued rule list (access, speed limits): the last match wins.
+///
+/// This low-level function expects a valid situation. Call [`Situation::validate`] first,
+/// or use [`crate::resolve`], which validates before evaluating a segment's rules.
 pub fn last_match<R: Scoped>(rules: &[R], s: &Situation) -> Resolution {
     let rules: Vec<RuleEvaluation> = rules
         .iter()
@@ -190,6 +193,8 @@ pub fn last_match<R: Scoped>(rules: &[R], s: &Situation) -> Resolution {
 }
 
 /// Resolves a set-valued rule list (prohibited transitions): every match is in force.
+///
+/// Like [`last_match`], this expects a valid situation; it does not validate the facts.
 pub fn all_matches<R: Scoped>(rules: &[R], s: &Situation) -> SetResolution {
     let rules: Vec<RuleEvaluation> = rules
         .iter()

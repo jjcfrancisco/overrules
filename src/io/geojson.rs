@@ -17,6 +17,11 @@ use crate::{Error, Result};
 ///
 /// Pass a buffered reader (e.g. [`std::io::BufReader`] around a file): `serde_json` reads
 /// byte by byte, which is many times slower on an unbuffered file.
+///
+/// The read fails as a whole if any feature is invalid. A property decoding failure returns
+/// [`Error::InvalidRecord`] with the segment ID and field path, including for features inside
+/// a collection. Malformed GeoJSON returns [`Error::GeoJson`]; collection errors of that kind
+/// include the feature's zero-based index.
 pub fn read(reader: impl Read) -> Result<Vec<Segment>> {
     from_value(serde_json::from_reader(reader)?)
 }
@@ -31,7 +36,15 @@ pub fn from_value(value: Value) -> Result<Vec<Segment>> {
             Some(Value::Array(features)) => features
                 .into_iter()
                 .enumerate()
-                .map(|(i, f)| feature(f).map_err(|e| Error::GeoJson(format!("feature #{i}: {e}"))))
+                .map(|(i, f)| {
+                    feature(f).map_err(|e| match e {
+                        Error::GeoJson(message) => {
+                            Error::GeoJson(format!("feature #{i}: {message}"))
+                        }
+                        // Structured errors already identify the segment; preserve their fields.
+                        other => other,
+                    })
+                })
                 .collect(),
             _ => Err(Error::GeoJson(
                 "FeatureCollection without a features array".to_owned(),
@@ -155,13 +168,16 @@ mod tests {
             r#""access_restrictions": null"#,
             r#""access_restrictions": [{"access_type": "permissive"}]"#,
         );
-        match read(feature.as_bytes()) {
-            Err(Error::InvalidRecord { id, path, reason }) => {
-                assert_eq!(id, "seg-1");
-                assert_eq!(path, "access_restrictions[0].access_type");
-                assert!(reason.contains("permissive"), "{reason}");
+        let collection = format!(r#"{{"type":"FeatureCollection","features":[{feature}]}}"#);
+        for input in [&feature, &collection] {
+            match read(input.as_bytes()) {
+                Err(Error::InvalidRecord { id, path, reason }) => {
+                    assert_eq!(id, "seg-1");
+                    assert_eq!(path, "access_restrictions[0].access_type");
+                    assert!(reason.contains("permissive"), "{reason}");
+                }
+                other => panic!("expected InvalidRecord, got {other:?}"),
             }
-            other => panic!("expected InvalidRecord, got {other:?}"),
         }
     }
 

@@ -7,6 +7,11 @@ any change to [the semantics](docs/semantics.md) is listed here.
 
 ## [Unreleased]
 
+### Fixed
+
+- GeoJSON FeatureCollections preserve structured segment errors, including `InvalidRecord`,
+  instead of converting them into strings. Callers can inspect the segment ID and field path.
+
 ### Changed
 
 - Renamed from `gers-lr` to **overrules**, and made a standalone library: the `overrules` crate.

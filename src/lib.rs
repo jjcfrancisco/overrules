@@ -83,9 +83,10 @@ mod situation;
 /// The version of the [Overture schema](https://github.com/OvertureMaps/schema) this crate
 /// reads.
 ///
-/// Its lists of values (headings, travel modes, units, access types…) are exactly that
-/// version's. Data with a value outside them fails to load, with
-/// [`Error::InvalidRecord`] naming the segment and the field, rather than being guessed at.
+/// This is the target version of the supported transportation fields, not a full schema
+/// validator or a version detected from an input file. Unknown values of the strict enums
+/// fail to load with [`Error::InvalidRecord`] naming the segment and field.
+/// Unknown travel modes are retained as [`TravelMode::Other`]; unmodelled fields are ignored.
 /// Which schema a release uses is listed in Overture's
 /// [release calendar](https://docs.overturemaps.org/release-calendar.json) and in each release's
 /// [STAC catalogue](https://stac.overturemaps.org) entry (`schema:version`).

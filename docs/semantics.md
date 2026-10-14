@@ -7,12 +7,12 @@ entry.
 Sources:
 
 - **Guide**: [Scoping and travel modes](https://docs.overturemaps.org/guides/transportation/scoping-and-travel-modes/) in the Overture docs.
-- **Schema**: [`schema/transportation/segment.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/transportation/segment.yaml) and [`schema/defs.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/defs.yaml), and the Pydantic models in [`packages/`](https://github.com/OvertureMaps/schema/tree/main/packages).
+- **Schema 2.0.0**: [`schema/transportation/segment.yaml`](https://github.com/OvertureMaps/schema/blob/v2.0.0/schema/transportation/segment.yaml) and [`schema/defs.yaml`](https://github.com/OvertureMaps/schema/blob/v2.0.0/schema/defs.yaml), and the Pydantic models in [`packages/`](https://github.com/OvertureMaps/schema/tree/v2.0.0/packages).
 
 ## 0. Schema version
 
 `overrules` reads data written to one Overture schema version, `overrules::SCHEMA_VERSION`
-(currently **2.0.0**, used by releases from `2026-09-23.0`). Its lists of values (headings,
+(currently **2.0.0**, used by releases `2026-09-23.0` and `2026-09-23.1`). Its lists of values (headings,
 travel modes, vehicle dimensions, comparisons, units, access types) are exactly that version's.
 
 **Choice:** strict. A value outside those lists (say a new access type) is not guessed at: the
@@ -20,12 +20,27 @@ file fails to load with an error naming the segment and the field, e.g.
 `segment 1b94…: cannot read access_restrictions[2].access_type: unknown variant "permissive"`.
 Travel modes are the one exception (§3).
 
+This describes the **supported fields**, not full schema validation. Readers ignore unmodelled
+fields; names, classes, purposes and statuses remain strings. Numeric schema constraints are
+not all enforced, and inverted ranges are deliberately accepted (§5). A successful read does
+not certify that the input conforms to the complete Overture schema.
+
+`SCHEMA_VERSION` is a declared target, not an input-version check. The readers do not contact
+STAC or reject a file solely because it came from another release. Applications that need a
+version check must retain the source release and consult its catalogue entry.
+
 Overture announces which schema each release uses in its
 [release calendar](https://docs.overturemaps.org/release-calendar.json), ahead of the release,
 and in each release's [STAC catalogue](https://stac.overturemaps.org) entry. A weekly CI job
 (`scripts/check_schema.py`, `just schema-check`) compares the lists here with the schema of the
-newest announced release, and warns when a "major change" month is coming, so a new value is
-caught before it reaches anyone's data.
+latest-dated calendar entry with a non-null schema version. It fails on a version mismatch or
+changed enum values, and adds a warning for a major-change release within 60 days. Entries with
+no announced schema version cannot yet be compared. Early detection depends on when the calendar
+and schema tag become available and when the job next runs.
+
+The check covers eight enum lists, not field additions, requiredness, numeric bounds, or rule
+semantics. Matching lists alone do not establish compatibility with a new schema. See
+[the maintenance steps](../CONTRIBUTING.md#when-the-schema-check-fails).
 
 ## 1. Resolving a rule list
 
@@ -133,7 +148,7 @@ resident-only exception would leave every answer unsettled.
 |---|---|
 | `access_restrictions` | `Access::Default`. Overture says "the default restrictions for the road class govern" but publishes no table of them ([discussion #307](https://github.com/orgs/OvertureMaps/discussions/307)). `overrules` does not invent one: a footway with no rules is not therefore open to cars. |
 | `speed_limits` | No limit from the data. Fall back to the jurisdiction's default for the class. |
-| `prohibited_transitions` | Every transition is allowed ("permissive by default", per the guide). |
+| `prohibited_transitions` | No explicit prohibition is known to match. Undetermined rules remain in `could_apply`; access restrictions and network connectivity must still be considered by the application. |
 
 ## Not yet covered
 

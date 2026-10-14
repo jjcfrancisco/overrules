@@ -12,6 +12,8 @@ use crate::{Error, Result};
 ///
 /// Every fact is optional. A rule scoped by a fact you leave out is *undetermined*
 /// rather than guessed at, and the answer says which later rules could change it.
+/// Purposes (`using`) and recognised statuses are claims: empty lists mean none are
+/// claimed, so a condition requiring one does not match.
 ///
 /// ```
 /// use overrules::{Dimension, Heading, Situation, TravelMode};

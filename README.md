@@ -16,12 +16,13 @@ limited by `when` (heading, time, travel mode, purpose, status, vehicle dimensio
 `between` (a stretch of the road, as fractions of its length). The spec says:
 
 - a rule applies when **all** its conditions hold;
-- the **last** applicable rule in the list wins;
+- for access and speed limits, the **last** applicable rule in the list wins;
+- for prohibited transitions, **every** matching rule is in force;
 - otherwise a default applies;
 - `between` fractions are **geodesic on WGS84**, not planar.
 
-Most consumers read `speed_limits[0]`, or compute positions in the plane. `overrules`
-implements the spec as written and shows its working: every rule, every condition, and which
+Reading only `speed_limits[0]`, or computing positions in the plane, can give the wrong answer.
+`overrules` evaluates scoped rules and shows its working: every rule, every condition, and which
 rule decided. Where you leave a fact out (the time, the vehicle's weight) it says which rules
 *could* change the answer instead of guessing.
 
@@ -32,10 +33,16 @@ rule decided. Where you leave a fact out (the time, the vehicle's weight) it say
 
 ## Use
 
+While the repository is private, this requires GitHub access. For SSH authentication:
+
 ```toml
 [dependencies]
-overrules = { git = "https://github.com/jjcfrancisco/overrules", features = ["parquet"] }
+overrules = { git = "ssh://git@github.com/jjcfrancisco/overrules.git", features = ["parquet"] }
 ```
+
+If Cargo cannot use your SSH credentials, set `CARGO_NET_GIT_FETCH_WITH_CLI=true`.
+Pin a `rev` to keep a consuming application on a specific commit while the API changes.
+The example below uses the Seville extract downloaded by `just data`.
 
 ```rust,no_run
 use overrules::{Access, AccessType, Heading, Network, Situation, TravelMode};
@@ -64,9 +71,40 @@ fn main() -> Result<(), overrules::Error> {
 | `Network` | Lookup by GERS id or prefix, by name, and nearest segment to a point. |
 | `io` | GeoJSON (always), Overture GeoParquet (feature `parquet`). |
 
-Errors are one `#[non_exhaustive]` `thiserror` enum, with an `ErrorKind` (not found, invalid
-input, bad data) for callers that map errors onto a transport. The library never panics on bad
-input or data, and compiles to WebAssembly.
+### Reading an answer
+
+- Rule indices are **zero-based** and refer to the original list.
+- `determining` identifies the last rule known to match. Check `is_settled()` before treating
+  that choice as final: `could_override` lists later rules whose facts are still unknown.
+- `Access::Default` means the application must supply the road-class default; it does **not**
+  mean access is allowed. A missing speed-limit rule likewise supplies no numeric default.
+- For prohibited transitions, inspect both `in_force` and `could_apply`.
+- An omitted purpose or recognised status means it was **not claimed**, rather than unknown.
+
+### Handling input errors
+
+Readers return `Result<Vec<Segment>>`: one invalid record fails the read rather than returning
+a partial network. `InvalidRecord` retains the segment ID and field path for both individual
+GeoJSON features and FeatureCollections, as well as Parquet records.
+
+```rust,no_run
+use overrules::{Error, ErrorKind, io};
+
+match io::read_path("segment.geojson") {
+    Ok(segments) => println!("Loaded {} segments", segments.len()),
+    Err(Error::InvalidRecord { id, path, reason }) => {
+        eprintln!("Segment {id}, field {path}: {reason}");
+    }
+    Err(error) if error.kind() == ErrorKind::NotFound => {
+        eprintln!("Input file not found: {error}");
+    }
+    Err(error) => eprintln!("Could not read segments: {error}"),
+}
+```
+
+`Error` is non-exhaustive, so callers need a fallback arm. `ErrorKind` provides a smaller
+classification for applications that do not need individual fields. See
+[schema support](docs/semantics.md#0-schema-version) for what the readers validate.
 
 ## What it shows, on real data
 
@@ -132,8 +170,8 @@ Everything runs through [`just`](https://github.com/casey/just):
 | `just test` | unit tests, conformance vectors and doc tests |
 | `just clippy` · `just fmt` | lint (pedantic, warnings are errors) and format |
 | `just check-wasm` | the library still compiles for `wasm32` |
-| `just package` | build the crate as crates.io would receive it, and test that |
-| `just ci` | everything CI runs |
+| `just package` | create and compile the crate archive without publishing |
+| `just ci` | format, lint, feature checks, tests, docs, wasm32 and packaging |
 | `just schema-check` | compare the library with the schema of Overture's newest announced release (CI runs it weekly) |
 | `just msrv` | build with the minimum supported Rust (1.95) |
 | `just data` · `just fixtures` | download Seville; rebuild the test fixture from it |
@@ -141,6 +179,10 @@ Everything runs through [`just`](https://github.com/casey/just):
 
 Checking for `wasm32` on macOS needs LLVM's `ar` (`brew install llvm`): Apple's silently drops
 the precompiled `wasm32` object of a transitive dependency (`psm`). The justfile finds it.
+
+Tests use the committed fixture and do not need the full Seville download. The schema check
+needs Python 3 and network access. MSRV and dependency checks run separately from `just ci`.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to handle a schema-check failure.
 
 ## Direction
 
@@ -163,14 +205,11 @@ Not a router, a downloader or a data pipeline. The research behind this is in
 
 ## Credits
 
-`overrules` is built by [Francisco Jiménez](https://github.com/jjcfrancisco) in collaboration
-with **Claude** (Anthropic's AI model, Claude Opus 5.5), working as a coding agent. Claude
-carried out the restructuring into a standalone library: the crate layout, the typed model and
-error handling, the three-valued evaluator's API, the GeoJSON reader, the tests and conformance
-vectors, the examples, the justfile, CI, and the semantics document. Earlier commits were also
-written with AI help, through GitHub Copilot. Francisco sets the direction, reviews every change
-and makes the decisions. From the restructuring on, commits Claude contributed to carry a
-`Co-authored-by: Claude` trailer.
+`overrules` is developed by [Francisco Jiménez](https://github.com/jjcfrancisco) with AI coding
+assistance. Git history records earlier contributions with Copilot and Claude co-author
+trailers. The subsequent FeatureCollection error fix and documentation updates were assisted
+by **GPT-6 Astra**, through GitHub Copilot in OpenCode. Francisco sets the direction and makes
+the decisions. AI-assisted commits should identify the assistant used for that work.
 
 ## Licence
 
