@@ -65,6 +65,10 @@ package:
     cargo package --allow-dirty
     @echo; cargo package --allow-dirty --list | sed 's/^/  /'
 
+# Check the library still reads the schema Overture's releases use (needs network)
+schema-check:
+    python3 scripts/check_schema.py
+
 # Everything CI runs
 ci: fmt-check clippy check-features test doc check-wasm package
 

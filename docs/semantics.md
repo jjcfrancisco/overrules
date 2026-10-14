@@ -7,7 +7,25 @@ entry.
 Sources:
 
 - **Guide**: [Scoping and travel modes](https://docs.overturemaps.org/guides/transportation/scoping-and-travel-modes/) in the Overture docs.
-- **Schema**: [`schema/transportation/segment.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/transportation/segment.yaml) and [`schema/defs.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/defs.yaml).
+- **Schema**: [`schema/transportation/segment.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/transportation/segment.yaml) and [`schema/defs.yaml`](https://github.com/OvertureMaps/schema/blob/main/schema/defs.yaml), and the Pydantic models in [`packages/`](https://github.com/OvertureMaps/schema/tree/main/packages).
+
+## 0. Schema version
+
+`overrules` reads data written to one Overture schema version, `overrules::SCHEMA_VERSION`
+(currently **2.0.0**, used by releases from `2026-09-23.0`). Its lists of values (headings,
+travel modes, vehicle dimensions, comparisons, units, access types) are exactly that version's.
+
+**Choice:** strict. A value outside those lists (say a new access type) is not guessed at: the
+file fails to load with an error naming the segment and the field, e.g.
+`segment 1b94…: cannot read access_restrictions[2].access_type: unknown variant "permissive"`.
+Travel modes are the one exception (§3).
+
+Overture announces which schema each release uses in its
+[release calendar](https://docs.overturemaps.org/release-calendar.json), ahead of the release,
+and in each release's [STAC catalogue](https://stac.overturemaps.org) entry. A weekly CI job
+(`scripts/check_schema.py`, `just schema-check`) compares the lists here with the schema of the
+newest announced release, and warns when a "major change" month is coming, so a new value is
+caught before it reaches anyone's data.
 
 ## 1. Resolving a rule list
 
@@ -91,8 +109,9 @@ resident-only exception would leave every answer unsettled.
 
 - The traveller's dimensions are compared in **metres**, **metric tonnes**, or a plain count
   (`axle_count`). A rule's threshold is converted to those units first.
-- The schema's `st` is the **short ton** (2,000 lb) and `lt` the long ton (2,240 lb), per the
-  comments on `weightUnit`. Neither is the stone.
+- The schema's `st` is the **short ton** (2,000 lb) and `lt` the **long ton** (2,240 lb).
+  Neither is the stone. The Pydantic model's description of `lt` says "2,400 pounds"; the
+  long ton is 2,240 lb, and that is what `overrules` uses.
 - A threshold with no unit is read as metres or tonnes.
 - A unit that cannot measure the dimension (feet for a weight) makes the condition
   `undetermined`, with the reason, rather than silently wrong.

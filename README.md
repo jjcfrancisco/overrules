@@ -25,7 +25,8 @@ implements the spec as written and shows its working: every rule, every conditio
 rule decided. Where you leave a fact out (the time, the vehicle's weight) it says which rules
 *could* change the answer instead of guessing.
 
-> Status: pre-release. The API is settling and the crate is not on crates.io yet. Python
+> Status: pre-release. Reads Overture schema **2.0.0** (`overrules::SCHEMA_VERSION`). The API is
+> settling and the crate is not on crates.io yet. Python
 > bindings are planned. The map explorer lives in
 > [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
 
@@ -133,6 +134,7 @@ Everything runs through [`just`](https://github.com/casey/just):
 | `just check-wasm` | the library still compiles for `wasm32` |
 | `just package` | build the crate as crates.io would receive it, and test that |
 | `just ci` | everything CI runs |
+| `just schema-check` | compare the library with the schema of Overture's newest announced release (CI runs it weekly) |
 | `just msrv` | build with the minimum supported Rust (1.95) |
 | `just data` · `just fixtures` | download Seville; rebuild the test fixture from it |
 | `just resolve <id> …` · `just audit` | the examples above, on the Seville extract |

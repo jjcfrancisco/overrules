@@ -18,6 +18,9 @@ pub enum Heading {
 }
 
 impl Heading {
+    /// Both headings.
+    pub const ALL: [Self; 2] = [Self::Forward, Self::Backward];
+
     /// The other direction.
     #[must_use]
     pub fn opposite(self) -> Self {
@@ -441,6 +444,26 @@ pub enum Comparison {
 }
 
 impl Comparison {
+    /// Every comparison the supported schema defines.
+    pub const ALL: [Self; 5] = [
+        Self::GreaterThan,
+        Self::GreaterThanEqual,
+        Self::Equal,
+        Self::LessThan,
+        Self::LessThanEqual,
+    ];
+
+    /// The spelling Overture uses.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::GreaterThan => "greater_than",
+            Self::GreaterThanEqual => "greater_than_equal",
+            Self::Equal => "equal",
+            Self::LessThan => "less_than",
+            Self::LessThanEqual => "less_than_equal",
+        }
+    }
+
     /// Whether `lhs <op> rhs` holds.
     ///
     /// Values within [`Comparison::TOLERANCE`] of each other count as equal for every

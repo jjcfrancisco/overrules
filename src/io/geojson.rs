@@ -65,7 +65,7 @@ fn feature(value: Value) -> Result<Segment> {
             }
         }
     }
-    let record: Record = serde_json::from_value(Value::Object(props))?;
+    let record = Record::from_value(Value::Object(props))?;
     let geometry = linestring(f.remove("geometry"))
         .map_err(|e| Error::GeoJson(format!("segment {}: {e}", record.id)))?;
     Segment::from_record(record, geometry)
@@ -147,6 +147,22 @@ mod tests {
         assert_eq!(back[0].geometry(), segs[0].geometry());
         assert_eq!(back[0].speed_limits, segs[0].speed_limits);
         assert_eq!(back[0].name, segs[0].name);
+    }
+
+    #[test]
+    fn a_value_outside_the_schema_names_the_segment_and_field() {
+        let feature = FEATURE.replace(
+            r#""access_restrictions": null"#,
+            r#""access_restrictions": [{"access_type": "permissive"}]"#,
+        );
+        match read(feature.as_bytes()) {
+            Err(Error::InvalidRecord { id, path, reason }) => {
+                assert_eq!(id, "seg-1");
+                assert_eq!(path, "access_restrictions[0].access_type");
+                assert!(reason.contains("permissive"), "{reason}");
+            }
+            other => panic!("expected InvalidRecord, got {other:?}"),
+        }
     }
 
     #[test]

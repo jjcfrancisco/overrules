@@ -63,6 +63,10 @@
 //! # Features
 //!
 //! * `parquet`: read Overture GeoParquet release files.
+//!
+//! # Schema version
+//!
+//! The crate reads data written to Overture schema [`SCHEMA_VERSION`].
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
@@ -75,6 +79,17 @@ pub mod lr;
 pub mod model;
 mod network;
 mod situation;
+
+/// The version of the [Overture schema](https://github.com/OvertureMaps/schema) this crate
+/// reads.
+///
+/// Its lists of values (headings, travel modes, units, access types…) are exactly that
+/// version's. Data with a value outside them fails to load, with
+/// [`Error::InvalidRecord`] naming the segment and the field, rather than being guessed at.
+/// Which schema a release uses is listed in Overture's
+/// [release calendar](https://docs.overturemaps.org/release-calendar.json) and in each release's
+/// [STAC catalogue](https://stac.overturemaps.org) entry (`schema:version`).
+pub const SCHEMA_VERSION: &str = "2.0.0";
 
 pub use answer::{Access, Answer, resolve};
 pub use error::{Error, ErrorKind, Result};

@@ -17,6 +17,9 @@ pub enum AccessType {
 }
 
 impl AccessType {
+    /// Every access type the supported schema defines.
+    pub const ALL: [Self; 3] = [Self::Allowed, Self::Denied, Self::Designated];
+
     /// The spelling Overture uses.
     pub fn as_str(self) -> &'static str {
         match self {
@@ -57,12 +60,22 @@ pub enum SpeedUnit {
     MilesPerHour,
 }
 
-impl fmt::Display for SpeedUnit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
+impl SpeedUnit {
+    /// Every speed unit the supported schema defines.
+    pub const ALL: [Self; 2] = [Self::KilometresPerHour, Self::MilesPerHour];
+
+    /// The spelling Overture uses.
+    pub fn as_str(self) -> &'static str {
+        match self {
             Self::KilometresPerHour => "km/h",
             Self::MilesPerHour => "mph",
-        })
+        }
+    }
+}
+
+impl fmt::Display for SpeedUnit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.pad(self.as_str())
     }
 }
 

@@ -33,6 +33,21 @@ pub enum Error {
         reason: String,
     },
 
+    /// A segment's properties do not match the schema this crate reads
+    /// ([`SCHEMA_VERSION`](crate::SCHEMA_VERSION)): typically a value newer than the crate.
+    #[error(
+        "segment {id}: cannot read `{path}`: {reason} (overrules reads Overture schema {})",
+        crate::SCHEMA_VERSION
+    )]
+    InvalidRecord {
+        /// GERS id of the segment, or `?` if it has none.
+        id: String,
+        /// Where in the properties, e.g. `access_restrictions[2].access_type`.
+        path: String,
+        /// What is wrong with the value there.
+        reason: String,
+    },
+
     /// A linear reference outside `0..=1`.
     #[error("linear reference {0} is outside 0..=1")]
     FractionOutOfRange(f64),
@@ -76,9 +91,11 @@ impl Error {
             | Self::Invalid { .. }
             | Self::EmptyNetwork => ErrorKind::InvalidInput,
             Self::Io(e) if e.kind() == std::io::ErrorKind::NotFound => ErrorKind::NotFound,
-            Self::InvalidGeometry { .. } | Self::GeoJson(_) | Self::Io(_) | Self::Json(_) => {
-                ErrorKind::Data
-            }
+            Self::InvalidGeometry { .. }
+            | Self::InvalidRecord { .. }
+            | Self::GeoJson(_)
+            | Self::Io(_)
+            | Self::Json(_) => ErrorKind::Data,
             #[cfg(feature = "parquet")]
             Self::Parquet(_) => ErrorKind::Data,
         }

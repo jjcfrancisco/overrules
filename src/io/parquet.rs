@@ -12,18 +12,9 @@ use geo::{Geometry, LineString};
 use geozero::ToGeo as _;
 use geozero::wkb::Wkb;
 use parquet::file::reader::{FileReader as _, SerializedFileReader};
-use serde::Deserialize;
 
 use crate::model::{Record, Segment};
 use crate::{Error, Result};
-
-#[derive(Deserialize)]
-struct Row {
-    #[serde(flatten)]
-    record: Record,
-    /// WKB, base64-encoded: that is how the parquet crate renders binary columns as JSON.
-    geometry: String,
-}
 
 /// Reads every segment in an Overture `segment` Parquet file.
 pub fn read_path(path: impl AsRef<Path>) -> Result<Vec<Segment>> {
@@ -36,11 +27,20 @@ pub fn read(file: File) -> Result<Vec<Segment>> {
     let rows = usize::try_from(reader.metadata().file_metadata().num_rows()).unwrap_or_default();
     let mut out = Vec::with_capacity(rows);
     for row in reader.get_row_iter(None)? {
-        let Row { record, geometry } = serde_json::from_value(row?.to_json_value())?;
-        let geometry = decode_linestring(&geometry).map_err(|reason| Error::InvalidGeometry {
-            id: record.id.clone(),
-            reason,
-        })?;
+        let mut value = row?.to_json_value();
+        // WKB, base64-encoded: that is how the parquet crate renders binary columns as JSON.
+        let geometry = value
+            .as_object_mut()
+            .and_then(|o| o.remove("geometry"))
+            .and_then(|g| g.as_str().map(str::to_owned));
+        let record = Record::from_value(value)?;
+        let geometry = geometry
+            .ok_or_else(|| "no geometry".to_owned())
+            .and_then(|g| decode_linestring(&g))
+            .map_err(|reason| Error::InvalidGeometry {
+                id: record.id.clone(),
+                reason,
+            })?;
         out.push(Segment::from_record(record, geometry)?);
     }
     Ok(out)

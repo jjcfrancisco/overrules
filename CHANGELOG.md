@@ -31,6 +31,14 @@ any change to [the semantics](docs/semantics.md) is listed here.
 - Vehicle thresholds are converted to metres and tonnes from any Overture unit, including the
   short ton (`st`). `Situation::vehicle_spec("weight=7500kg")` parses dimensions with units,
   including scientific notation (`weight=1e3kg`).
+- `SCHEMA_VERSION` (2.0.0): the Overture schema the crate reads. Data with a value outside
+  that schema's lists fails with `Error::InvalidRecord`, naming the segment and the field
+  (e.g. `access_restrictions[2].access_type`).
+- A weekly CI job (`scripts/check_schema.py`) compares the crate's lists with the schema of
+  Overture's newest announced release, from the release calendar, and warns ahead of major
+  change months. The `supported_values` example prints the lists it compares.
+- `ALL` constants for `Heading`, `Comparison`, `AccessType` and `SpeedUnit`, and `as_str` for
+  `Comparison` and `SpeedUnit`.
 - Inverted `between` ranges are named in the explanation.
 - Vehicle comparisons treat values within 1e-9 as equal for every operator, so converting a
   limit between units cannot flip `<` or `>` at the boundary.

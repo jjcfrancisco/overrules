@@ -192,6 +192,23 @@ pub(crate) struct Record {
     pub prohibited_transitions: Vec<ProhibitedTransition>,
 }
 
+impl Record {
+    /// Reads Overture-shaped properties. On a mismatch the error names the segment and
+    /// the path of the field that failed, e.g. `access_restrictions[2].access_type`.
+    pub(crate) fn from_value(value: serde_json::Value) -> Result<Self> {
+        let id = value
+            .get("id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("?")
+            .to_owned();
+        serde_path_to_error::deserialize(value).map_err(|e| Error::InvalidRecord {
+            id,
+            path: e.path().to_string(),
+            reason: e.into_inner().to_string(),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Names {
     #[serde(default, skip_serializing_if = "Option::is_none")]
