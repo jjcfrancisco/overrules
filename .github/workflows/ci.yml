@@ -110,7 +110,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      # No rust-cache here: its cleanup trips over target/package and logs spurious errors.
       - uses: taiki-e/install-action@v2
         with:
           tool: just
