@@ -2,4 +2,4 @@ allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true
 avoid-breaking-exported-api = false
-doc-valid-idents = ["GeoJSON", "GeoParquet", "MessagePack", "WebAssembly", "OpenStreetMap", "MapLibre", ".."]
+doc-valid-idents = ["GeoJSON", "GeoParquet", "WebAssembly", "OpenStreetMap", ".."]

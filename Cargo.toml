@@ -2,7 +2,7 @@
 name = "overrules"
 version = "0.1.0"
 authors = ["Francisco Jiménez <jjcfrank@gmail.com>"]
-description = "Evaluate Overture Maps transportation rules (speed limits, access, turn restrictions) for any traveller, with provenance, on geodesic linear references"
+description = "Evaluate Overture Maps transportation rules (speed limits, access restrictions, prohibited turns) with rule-by-rule explanations"
 readme = "README.md"
 edition = "2024"
 # Set by compact-calendar (via opening-hours), which uses VecDeque::push_back_mut.
@@ -10,7 +10,7 @@ rust-version = "1.95"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jjcfrancisco/overrules"
 homepage = "https://github.com/jjcfrancisco/overrules"
-keywords = ["overture", "gis", "linear-referencing", "routing", "geodesic"]
+keywords = ["overture", "gis", "geospatial", "linear-referencing", "transportation"]
 categories = ["science::geo"]
 include = ["/src", "/examples", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE-*"]
 
@@ -55,7 +55,7 @@ missing_debug_implementations = "warn"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
-# Restrictions worth having in a library that will grow Python bindings.
+# A few restriction lints on top of pedantic.
 dbg_macro = "warn"
 todo = "warn"
 unimplemented = "warn"

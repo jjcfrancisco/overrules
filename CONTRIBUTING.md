@@ -53,12 +53,20 @@ The rule semantics are the point of this project, so changes to them need care:
    constraints and scoping behaviour. The automatic check compares only eight enum lists.
 3. Update the model and evaluator where needed, add representative test cases, and document
    changed interpretations in `docs/semantics.md` and `CHANGELOG.md`.
-4. Update `SCHEMA_VERSION` only after reviewing compatibility. Keep the version named in the
-   README and semantics document in sync. Re-run `just schema-check` and `just ci`.
+4. Update `SCHEMA_VERSION` only after reviewing compatibility. Add a row to the README's
+   compatibility table and keep the semantics document in sync. Re-run `just schema-check`
+   and `just ci`.
 
 A major-change-month warning is a reminder to review upcoming changes, not evidence that the
 current library is incompatible. Future releases with no schema version are skipped for enum
 comparison. The scheduled job runs each Monday and can also be run manually on GitHub.
+
+## Versioning
+
+- Supporting a new Overture schema version is released as a new minor version (0.1 to 0.2),
+  because files written to the old schema may no longer load.
+- The changelog entry for that release names the schema version it supports.
+- Git tags mark `overrules` versions only (`v0.1.0`), not schema versions.
 
 ## Style
 

@@ -4,16 +4,16 @@
 //! Overture attaches `speed_limits`, `access_restrictions` and `prohibited_transitions` to
 //! road segments as ordered lists of scoped rules. A rule can be limited by `when`
 //! (heading, time, travel mode, purpose, status, vehicle dimensions) and by `between` (a
-//! stretch of the segment, as geodesic fractions of its length). The spec says:
+//! stretch of the segment, as a fraction of its length).
 //!
-//! * a rule applies when **all** its conditions hold;
-//! * the **last** applicable rule in the list wins;
-//! * otherwise a property default applies;
-//! * `between` positions are **geodesic on WGS84**, not planar.
+//! * A rule applies when all its conditions hold.
+//! * For speed and access, the last matching rule wins. For prohibited turns, every matching
+//!   rule applies.
+//! * With no matching rule, a property default applies.
+//! * Positions along segments use WGS84 geodesic distances.
 //!
-//! This crate implements exactly that, with provenance: every rule is evaluated, each
-//! condition says why it held or failed, and facts you did not supply leave a rule
-//! *undetermined* instead of guessed.
+//! Every rule is evaluated, and each condition says why it held or failed. Facts you did not
+//! supply leave a rule undetermined rather than guessed.
 //!
 //! # Example
 //!

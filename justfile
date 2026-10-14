@@ -43,7 +43,7 @@ check-features:
     cargo check --no-default-features
     cargo check --all-features --all-targets
 
-# Check the library still compiles for the browser (wasm32), as the explorer needs
+# Check the library still compiles for the browser (wasm32)
 check-wasm: _wasm-target
     {{ wasm_env }} cargo clippy --target {{ wasm_target }} -- -D warnings
 

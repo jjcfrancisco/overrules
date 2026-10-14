@@ -10,8 +10,9 @@ with rule-by-rule explanations.
 For speed and access, the last matching rule wins. For prohibited turns, every matching
 rule applies. Positions along segments use WGS84 geodesic distances.
 
-Supports Overture schema **2.0.0**. The map demo lives in
-[overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
+| overrules | Overture schema |
+|---|---|
+| 0.1 | 2.0.0 |
 
 ## Use
 
@@ -27,9 +28,9 @@ This example uses the Seville extract downloaded by `just data`:
 ```rust,no_run
 use overrules::{Heading, Network, Situation, TravelMode};
 
-fn main() -> Result<(), overrules::Error> {
+fn main() -> overrules::Result<()> {
     let net = Network::new(overrules::io::read_path("data/seville/segment.parquet")?);
-    let segment = net.lookup("e26d3384")?; // GERS id or unique prefix
+    let segment = net.lookup("e26d3384-0e65-4601-9c1c-4ce06466d3b2")?; // GERS id
     let traveller = Situation::new()
         .at(0.05)
         .heading(Heading::Forward)
