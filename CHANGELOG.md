@@ -9,37 +9,35 @@ any change to [the semantics](docs/semantics.md) is listed here.
 
 ### Changed
 
-- Renamed from `gers-lr` to **overrules**, and restructured as a Cargo workspace:
-  `overrules` (library), `overrules-cli` (the `overrules` binary), `overrules-explorer`
-  (web API, page and server) and `overrules-wasm`.
-- The library is I/O-free by default. Parquet reading (`parquet`) and packs (`pack`) are opt-in
-  features.
+- Renamed from `gers-lr` to **overrules**, and made a standalone library: the `overrules` crate.
+  The CLI, the map explorer, its HTTP server, the WebAssembly bindings and the browser data pack
+  moved to [overrules-explorer](https://github.com/jjcfrancisco/overrules-explorer).
+- The library does no file reading by default. Reading Parquet is the opt-in `parquet` feature;
+  GeoJSON is always available.
 - Typed model: `Heading`, `TravelMode`, `Dimension`, `Unit`, `Comparison`, `AccessType`,
   `SpeedUnit` and `Between` replace strings and raw arrays. Unknown travel modes in data are kept
   as `TravelMode::Other` rather than failing the read.
-- Errors: one `thiserror` enum per library crate, with `ErrorKind` for mapping to a transport.
-  `GeodesicLine` rejects degenerate geometry instead of panicking.
+- Errors: one `thiserror` enum with `ErrorKind`, for mapping to a transport. `GeodesicLine`
+  rejects degenerate geometry instead of panicking.
 - Rule resolution returns owned, serialisable results (`Resolution`, `SetResolution`) with typed
-  scope checks. `Answer` gives `access_outcome()`, `speed_limit_rule()` and
-  `transitions_in_force()`.
+  scope checks, from `eval::last_match` and `eval::all_matches`. `Answer` gives
+  `access_outcome()`, `speed_limit_rule()` and `transitions_in_force()`.
 - Explanations no longer mention CLI flags.
-- CLI: `--segments` (or `OVERRULES_SEGMENTS`) is required. `find` and `at` take positional
-  arguments. `show` is replaced by `export`, which writes GeoJSON that `--segments` reads back.
-  `serve` takes `--host` and stops cleanly on Ctrl-C.
-- Pack format 2 (named MessagePack fields); rebuild packs with `overrules pack`.
 - Minimum supported Rust is 1.95, set by a transitive dependency of `opening-hours`.
 
 ### Added
 
 - Vehicle thresholds are converted to metres and tonnes from any Overture unit, including the
-  short ton (`st`). Travellers can give dimensions with units: `--vehicle weight=7500kg`.
+  short ton (`st`). `Situation::vehicle_spec("weight=7500kg")` parses dimensions with units.
 - Inverted `between` ranges are named in the explanation.
 - Reading and writing Overture segments as GeoJSON.
-- `Network::stats`, `Segment::boundaries`, `GeodesicLine::bearing_at` and `GeodesicLine::slice`.
+- `Network::stats`, `Segment::boundaries`, `GeodesicLine::bearing_at`, `GeodesicLine::slice`
+  and `Scoped::scope_text`.
+- Examples: `resolve`, `planar_audit` and `export`.
 - Draft conformance vectors, run by `cargo test`, with a Seville fixture.
 - `docs/semantics.md`: every interpretation the evaluator makes, with sources.
-- A justfile, GitHub Actions CI (lint, test on three OSes, docs, MSRV, WebAssembly smoke test,
-  cargo-deny), Dependabot, and dual MIT/Apache-2.0 licence files.
+- A justfile; GitHub Actions CI (lint, tests on three OSes, docs, MSRV, a `wasm32` build,
+  packaging, cargo-deny); Dependabot; dual MIT/Apache-2.0 licence files.
 
 ## gers-lr (pre-release)
 

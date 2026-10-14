@@ -8,9 +8,6 @@ updates:
       rust-dependencies:
         patterns: ["*"]
         update-types: [minor, patch]
-    ignore:
-      # Pinned to match wasm-bindgen-cli in CI and the justfile; bump all three together.
-      - dependency-name: wasm-bindgen
   - package-ecosystem: github-actions
     directory: /
     schedule:

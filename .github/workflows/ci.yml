@@ -86,8 +86,7 @@ jobs:
       - run: cargo check --workspace --all-targets --all-features
 
   wasm:
-    name: WebAssembly build
-    needs: lint
+    name: Compiles for wasm32
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -100,12 +99,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
-          tool: just,wasm-bindgen@0.2.123
-      - uses: actions/setup-node@v7
+          tool: just
+      - run: just check-wasm
+
+  package:
+    name: Package for crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
         with:
-          node-version: 22
-      - run: just clippy-wasm
-      - run: just wasm-smoke
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: just package
 
   deny:
     name: Licences and advisories

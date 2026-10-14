@@ -5,7 +5,7 @@ Thanks for helping. Issues and pull requests are welcome.
 ## Setup
 
 You need Rust (stable; the minimum is in `Cargo.toml`) and [`just`](https://github.com/casey/just).
-For the demo data, [DuckDB](https://duckdb.org). For the WebAssembly build, the
+For the demo data, [DuckDB](https://duckdb.org). For `just check-wasm`, the
 `wasm32-unknown-unknown` target and, on macOS, `brew install llvm`.
 
 ```sh

@@ -1,8 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/cli", "crates/core", "crates/explorer", "crates/wasm"]
-# The wasm crate only builds for wasm32; `cargo build` at the root skips it.
-default-members = ["crates/cli", "crates/core", "crates/explorer"]
+# One crate today; Python bindings will join it here.
+members = ["crates/core"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,26 +16,16 @@ keywords = ["overture", "gis", "linear-referencing", "routing", "geodesic"]
 categories = ["science::geo"]
 
 [workspace.dependencies]
-overrules = { path = "crates/core", version = "0.1.0", default-features = false }
-overrules-explorer = { path = "crates/explorer", version = "0.1.0", default-features = false }
-
-anyhow = "1"
-axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio"] }
 base64 = "0.23"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
-clap = { version = "4", features = ["derive", "env", "wrap_help"] }
-flate2 = "1"
 geo = "0.33"
 geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"] }
 opening-hours = "2"
 parquet = { version = "60", default-features = false, features = ["json", "snap", "zstd"] }
-rmp-serde = "1"
 rstar = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-tokio = { version = "1", features = ["net", "rt-multi-thread", "signal"] }
-wasm-bindgen = "=0.2.123"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -58,22 +47,10 @@ cast_precision_loss = "allow"
 cast_sign_loss = "allow"
 cast_possible_wrap = "allow"
 float_cmp = "allow"
+implicit_hasher = "allow"
+many_single_char_names = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 module_name_repetitions = "allow"
-implicit_hasher = "allow"
 must_use_candidate = "allow"
 similar_names = "allow"
-many_single_char_names = "allow"
-
-[profile.release]
-lto = "thin"
-
-# Browser build: small and fast to download (`just web`).
-[profile.wasm-release]
-inherits = "release"
-lto = "fat"
-codegen-units = 1
-opt-level = 3
-panic = "abort"
-strip = true

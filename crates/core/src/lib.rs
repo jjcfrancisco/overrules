@@ -59,12 +59,10 @@
 //! * [`eval`]: scope checks and rule resolution.
 //! * [`Network`]: lookup by id, name and position.
 //! * [`io`]: GeoJSON, and Parquet with feature `parquet`.
-//! * `pack`: compact snapshots for the browser, with feature `pack`.
 //!
 //! # Features
 //!
 //! * `parquet`: read Overture GeoParquet release files.
-//! * `pack`: encode and decode compact MessagePack snapshots.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
@@ -76,8 +74,6 @@ pub mod io;
 pub mod lr;
 pub mod model;
 mod network;
-#[cfg(feature = "pack")]
-pub mod pack;
 mod situation;
 
 pub use answer::{Access, Answer, resolve};
@@ -86,3 +82,8 @@ pub use eval::{Resolution, SetResolution, Verdict};
 pub use model::{AccessType, Dimension, Heading, Segment, TravelMode};
 pub use network::{Hit, Network, RuleStats, Stats};
 pub use situation::Situation;
+
+/// Compiles the README's example as a doc test.
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;

@@ -52,11 +52,6 @@ pub enum Error {
     #[error("GeoJSON: {0}")]
     GeoJson(String),
 
-    /// A pack written by an incompatible version, or corrupt.
-    #[cfg(feature = "pack")]
-    #[error("pack: {0}")]
-    Pack(String),
-
     /// [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -69,16 +64,6 @@ pub enum Error {
     #[cfg(feature = "parquet")]
     #[error(transparent)]
     Parquet(#[from] parquet::errors::ParquetError),
-
-    /// [`rmp_serde::encode::Error`].
-    #[cfg(feature = "pack")]
-    #[error(transparent)]
-    PackEncode(#[from] rmp_serde::encode::Error),
-
-    /// [`rmp_serde::decode::Error`].
-    #[cfg(feature = "pack")]
-    #[error(transparent)]
-    PackDecode(#[from] rmp_serde::decode::Error),
 }
 
 impl Error {
@@ -95,8 +80,6 @@ impl Error {
             }
             #[cfg(feature = "parquet")]
             Self::Parquet(_) => ErrorKind::Data,
-            #[cfg(feature = "pack")]
-            Self::Pack(_) | Self::PackEncode(_) | Self::PackDecode(_) => ErrorKind::Data,
         }
     }
 
