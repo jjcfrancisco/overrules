@@ -4,7 +4,7 @@ The project follows [Semantic Versioning](https://semver.org/). Before 1.0, mino
 break the API. Changes to rule interpretation are recorded here and in
 [the semantics document](docs/semantics.md).
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-15)
 
 First release. Supports Overture schema 2.0.0 and Rust 1.95 or later.
 
