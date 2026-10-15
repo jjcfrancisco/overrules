@@ -10,6 +10,11 @@ with rule-by-rule explanations.
 For speed and access, the last matching rule wins. For prohibited turns, every matching
 rule applies. Positions along segments use WGS84 geodesic distances.
 
+To see it running, [overrules-city](https://jjcfrancisco.github.io/overrules-city/) is a
+live Lower Manhattan in the browser: every traveller asks `overrules` at each junction, and
+you can click any road to see its rules evaluated one by one
+([source](https://github.com/jjcfrancisco/overrules-city)).
+
 | overrules | Overture schema |
 |---|---|
 | 0.1 | 2.0.0 |
