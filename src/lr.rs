@@ -268,12 +268,12 @@ pub(crate) mod tests {
 
     use super::*;
 
-    /// Roughly 1.1 km east, then 1.1 km north, in Seville (37.39°N).
-    pub(crate) fn seville_l() -> GeodesicLine {
+    /// Roughly 1.1 km east, then 1.1 km north, in New York City (40.73°N).
+    pub(crate) fn l_shaped() -> GeodesicLine {
         GeodesicLine::new(LineString::new(vec![
-            coord! { x: -5.9950, y: 37.3900 },
-            coord! { x: -5.9825, y: 37.3900 },
-            coord! { x: -5.9825, y: 37.4000 },
+            coord! { x: -73.9950, y: 40.7300 },
+            coord! { x: -73.9818, y: 40.7300 },
+            coord! { x: -73.9818, y: 40.7400 },
         ]))
         .unwrap()
     }
@@ -297,7 +297,7 @@ pub(crate) mod tests {
 
     #[test]
     fn point_at_and_project_round_trip() {
-        let line = seville_l();
+        let line = l_shaped();
         for f in [0.0, 0.1, 0.37, 0.5, 0.73, 1.0] {
             let at = line.point_at(f);
             let back = line.project(at.point());
@@ -312,17 +312,17 @@ pub(crate) mod tests {
 
     #[test]
     fn point_at_lands_on_vertices() {
-        let line = seville_l();
+        let line = l_shaped();
         let half = line.cumulative_m()[1] / line.length_m();
         let corner = line.point_at(half);
-        assert!((corner.lon - -5.9825).abs() < 1e-9 && (corner.lat - 37.39).abs() < 1e-9);
+        assert!((corner.lon - -73.9818).abs() < 1e-9 && (corner.lat - 40.73).abs() < 1e-9);
         let end = line.point_at(1.0);
-        assert_eq!((end.lon, end.lat), (-5.9825, 37.4));
+        assert_eq!((end.lon, end.lat), (-73.9818, 40.74));
     }
 
     #[test]
     fn bearing_follows_the_line() {
-        let line = seville_l();
+        let line = l_shaped();
         let east = line.bearing_at(&line.point_at(0.1));
         let north = line.bearing_at(&line.point_at(0.9));
         assert!((east - 90.0).abs() < 0.1, "{east}");
@@ -331,9 +331,9 @@ pub(crate) mod tests {
 
     #[test]
     fn slice_keeps_interior_vertices() {
-        let line = seville_l();
+        let line = l_shaped();
         let s = line.slice(0.25, 0.75);
         assert_eq!(s.0.len(), 3);
-        assert_eq!(s.0[1], coord! { x: -5.9825, y: 37.3900 });
+        assert_eq!(s.0[1], coord! { x: -73.9818, y: 40.7300 });
     }
 }

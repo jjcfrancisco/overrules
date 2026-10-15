@@ -1,0 +1,1529 @@
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -73.976566,
+            40.621995
+          ],
+          [
+            -73.9766279,
+            40.6219381
+          ],
+          [
+            -73.9771331,
+            40.6214743
+          ],
+          [
+            -73.9777503,
+            40.6208805
+          ],
+          [
+            -73.9778547,
+            40.6207798
+          ],
+          [
+            -73.9784843,
+            40.6201724
+          ],
+          [
+            -73.9788551,
+            40.6198085
+          ],
+          [
+            -73.978911,
+            40.619755
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "93212c22-eee0-4a9d-872a-c63dcf56dfa9",
+      "properties": {
+        "access_restrictions": [],
+        "class": "tertiary",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "0375346a-2473-4045-a28c-2c67c3f6d2c9"
+          },
+          {
+            "at": 0.025791398,
+            "connector_id": "1c8bc682-f3af-4038-b01e-3030ffc47c9e"
+          },
+          {
+            "at": 0.976135302,
+            "connector_id": "29dc66de-cba0-4646-b190-aadc25339555"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "a064c6cd-4e88-4a9e-89f9-003806f36dbe"
+          }
+        ],
+        "id": "93212c22-eee0-4a9d-872a-c63dcf56dfa9",
+        "names": {
+          "primary": "21st Avenue"
+        },
+        "prohibited_transitions": [],
+        "routes": [],
+        "speed_limits": [
+          {
+            "between": [
+              0.0,
+              0.545266897
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 15
+            }
+          },
+          {
+            "between": [
+              0.545266897,
+              1.0
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 20
+            }
+          },
+          {
+            "between": [
+              0.0,
+              0.545266897
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 15
+            },
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "between": [
+              0.545266897,
+              1.0
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 25
+            },
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "max_speed": {
+              "unit": "mph",
+              "value": 20
+            },
+            "when": {
+              "heading": "forward"
+            }
+          }
+        ],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -73.991677,
+            40.59478
+          ],
+          [
+            -73.9917415,
+            40.5947185
+          ],
+          [
+            -73.9918867,
+            40.59458
+          ],
+          [
+            -73.9928743,
+            40.5936381
+          ],
+          [
+            -73.9929527,
+            40.5935629
+          ],
+          [
+            -73.9929686,
+            40.5935478
+          ],
+          [
+            -73.9931571,
+            40.593369
+          ],
+          [
+            -73.9932127,
+            40.5933163
+          ],
+          [
+            -73.9932464,
+            40.5932843
+          ],
+          [
+            -73.993317,
+            40.593217
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "cae646b2-ead0-4295-819c-cafba9dc072d",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "denied",
+            "between": [
+              0.0,
+              0.778385534
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "access_type": "allowed",
+            "between": [
+              0.778385534,
+              1.0
+            ],
+            "when": {
+              "using": [
+                "at_destination"
+              ]
+            }
+          },
+          {
+            "access_type": "allowed",
+            "between": [
+              0.0,
+              0.778385534
+            ],
+            "when": {
+              "recognized": [
+                "as_private"
+              ]
+            }
+          }
+        ],
+        "class": "unclassified",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "8a2c5d15-af1d-4f4e-99d9-8b6c4f05541b"
+          },
+          {
+            "at": 0.039340134,
+            "connector_id": "88f7d710-1d14-40d3-8b9d-f868e66f0957"
+          },
+          {
+            "at": 0.127922106,
+            "connector_id": "4232b82f-b916-4167-b89e-2c9125a25160"
+          },
+          {
+            "at": 0.730377466,
+            "connector_id": "26bc6536-f334-43fc-8a52-48d21e1b1ad5"
+          },
+          {
+            "at": 0.788044605,
+            "connector_id": "7c83b394-223f-484c-b4e1-e80bde56bc83"
+          },
+          {
+            "at": 0.902652672,
+            "connector_id": "83e78b26-d33a-45a1-8acf-949a05348e66"
+          },
+          {
+            "at": 0.956945311,
+            "connector_id": "90060f73-9c9c-4c65-8bcc-c7c3e8bbe346"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "a31fdcca-d073-466b-8095-c36e4daa5083"
+          }
+        ],
+        "id": "cae646b2-ead0-4295-819c-cafba9dc072d",
+        "names": {
+          "primary": "Bay 38th Street"
+        },
+        "prohibited_transitions": [],
+        "routes": [],
+        "speed_limits": [
+          {
+            "between": [
+              0.0,
+              0.778385534
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 5
+            }
+          }
+        ],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -74.1165146,
+            40.6390008
+          ],
+          [
+            -74.1165271,
+            40.6390675
+          ],
+          [
+            -74.1165309,
+            40.6390876
+          ],
+          [
+            -74.1166909,
+            40.6399438
+          ],
+          [
+            -74.1166952,
+            40.639967
+          ],
+          [
+            -74.1167073,
+            40.6400315
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "11f153a8-1c4e-4b79-b1b6-90f83745c26b",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "denied",
+            "when": {
+              "mode": [
+                "motor_vehicle"
+              ]
+            }
+          },
+          {
+            "access_type": "allowed",
+            "when": {
+              "recognized": [
+                "as_private"
+              ]
+            }
+          }
+        ],
+        "class": "residential",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "73f35ebc-7e69-4d28-acf1-e70f8f29eabd"
+          },
+          {
+            "at": 0.064716375,
+            "connector_id": "a96e5fc7-6588-4b09-830a-ab8516616615"
+          },
+          {
+            "at": 0.937416934,
+            "connector_id": "6147c781-86bb-4572-b962-70f0d5b10ad3"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "8244edeb-5f79-426c-a2de-28b3057d122b"
+          }
+        ],
+        "id": "11f153a8-1c4e-4b79-b1b6-90f83745c26b",
+        "names": {
+          "primary": "Wayne Court"
+        },
+        "prohibited_transitions": [],
+        "routes": [],
+        "speed_limits": [],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -74.2479531,
+            40.5938491
+          ],
+          [
+            -74.2485477,
+            40.5939818
+          ],
+          [
+            -74.2486136,
+            40.5939977
+          ],
+          [
+            -74.2486732,
+            40.5940201
+          ],
+          [
+            -74.2488385,
+            40.5941012
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "fe1ad83f-c492-4694-9266-e3a6b755f0c7",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "denied",
+            "when": {
+              "mode": [
+                "hgv"
+              ],
+              "vehicle": [
+                {
+                  "comparison": "greater_than",
+                  "dimension": "weight",
+                  "unit": "st",
+                  "value": 4.0
+                }
+              ]
+            }
+          }
+        ],
+        "class": "secondary",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "a62f7a19-afaf-4fdd-9fc3-1ec4fee8e24a"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "065775ad-7afb-4363-9038-8114a7eb4854"
+          }
+        ],
+        "id": "fe1ad83f-c492-4694-9266-e3a6b755f0c7",
+        "names": {
+          "primary": "Roosevelt Avenue"
+        },
+        "prohibited_transitions": [],
+        "routes": [
+          {
+            "network": "US:NJ:Middlesex",
+            "ref": "602"
+          }
+        ],
+        "speed_limits": [],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -74.0741275,
+            40.6268204
+          ],
+          [
+            -74.0741168,
+            40.6267659
+          ],
+          [
+            -74.0739901,
+            40.6261242
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "1e5e6b7a-0105-4da3-943f-42680e7bf52d",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "allowed"
+          },
+          {
+            "access_type": "denied",
+            "when": {
+              "during": "08:00-20:00",
+              "mode": [
+                "motor_vehicle"
+              ]
+            }
+          }
+        ],
+        "class": "tertiary",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "b5998530-c375-4d57-99ad-9e5edca20231"
+          },
+          {
+            "at": 0.078273114,
+            "connector_id": "70829219-3fb6-4dc1-91c1-d5a36ca03b93"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "b1b70ff3-db8b-48fb-b6d8-e06382339679"
+          }
+        ],
+        "id": "1e5e6b7a-0105-4da3-943f-42680e7bf52d",
+        "names": {
+          "primary": "Front Street"
+        },
+        "prohibited_transitions": [],
+        "routes": [],
+        "speed_limits": [],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -73.8542933,
+            40.5783215
+          ],
+          [
+            -73.8542299,
+            40.5783427
+          ],
+          [
+            -73.8535414,
+            40.5785738
+          ],
+          [
+            -73.8534678,
+            40.5785985
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "5797c309-5b49-49c0-a90d-262f029be82f",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "denied",
+            "when": {
+              "heading": "backward"
+            }
+          }
+        ],
+        "class": "residential",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "023ec167-5852-4c56-8897-a72c1f5f1003"
+          },
+          {
+            "at": 0.076758693,
+            "connector_id": "3bc9540a-0c3a-4e59-b83f-1146f6511d05"
+          },
+          {
+            "at": 0.91084018,
+            "connector_id": "1c61301b-da97-42ff-b060-f82a9d736a23"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "ce211e30-848b-4d7a-a0f1-3be5a37f6947"
+          }
+        ],
+        "id": "5797c309-5b49-49c0-a90d-262f029be82f",
+        "names": {
+          "primary": "Cronston Avenue"
+        },
+        "prohibited_transitions": [],
+        "routes": [],
+        "speed_limits": [
+          {
+            "max_speed": {
+              "unit": "mph",
+              "value": 25
+            }
+          },
+          {
+            "max_speed": {
+              "unit": "mph",
+              "value": 20
+            },
+            "when": {
+              "during": "Mo-Fr07:00-18:00"
+            }
+          }
+        ],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -74.2348538,
+            40.5235982
+          ],
+          [
+            -74.2348817,
+            40.5233383
+          ],
+          [
+            -74.2349094,
+            40.5230671
+          ],
+          [
+            -74.2349365,
+            40.5228085
+          ],
+          [
+            -74.2349654,
+            40.522519
+          ],
+          [
+            -74.2349908,
+            40.5222811
+          ],
+          [
+            -74.2349972,
+            40.522222
+          ],
+          [
+            -74.2350193,
+            40.5219936
+          ],
+          [
+            -74.2350516,
+            40.5216931
+          ],
+          [
+            -74.2350705,
+            40.521501
+          ],
+          [
+            -74.2350791,
+            40.5214213
+          ],
+          [
+            -74.2351003,
+            40.521212
+          ],
+          [
+            -74.2351194,
+            40.5210296
+          ],
+          [
+            -74.2351298,
+            40.5209196
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60",
+      "properties": {
+        "access_restrictions": [],
+        "class": "tertiary",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "71a2c0ea-bfa9-4734-9d81-83597d791f6e"
+          },
+          {
+            "at": 0.097053308,
+            "connector_id": "d69eab91-bcd7-40a8-aa2f-298191f5f656"
+          },
+          {
+            "at": 0.198294347,
+            "connector_id": "c55b7f37-4c4a-483f-8db6-25d72a296719"
+          },
+          {
+            "at": 0.294847064,
+            "connector_id": "3b1e4be0-cd45-45f8-bddb-ce9587d62773"
+          },
+          {
+            "at": 0.402905027,
+            "connector_id": "ddcdc130-d185-4872-b967-7a2bcff8c63c"
+          },
+          {
+            "at": 0.491739767,
+            "connector_id": "f5c65b23-ab4b-4757-8331-bed2346d915b"
+          },
+          {
+            "at": 0.513810513,
+            "connector_id": "bbf1eb0b-f15e-442e-a6cc-634178d8a158"
+          },
+          {
+            "at": 0.599047574,
+            "connector_id": "affb9040-c7f4-4520-9a7f-81c3e1542898"
+          },
+          {
+            "at": 0.711262913,
+            "connector_id": "aac81ec3-e382-44e0-b48a-d693bad9e41e"
+          },
+          {
+            "at": 0.782959687,
+            "connector_id": "355cc682-495f-43b8-adcb-2f30f7755092"
+          },
+          {
+            "at": 0.812722731,
+            "connector_id": "687e5754-45b3-45a5-8af9-031e0781cd74"
+          },
+          {
+            "at": 0.89085211,
+            "connector_id": "f8c38cb1-870e-41e7-bb6b-e6808e557a03"
+          },
+          {
+            "at": 0.958953918,
+            "connector_id": "f7df0999-47d6-46aa-8da7-a083b5ab5fec"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "2e57f35a-401f-45f3-a425-22d29a8a7783"
+          }
+        ],
+        "id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60",
+        "names": {
+          "primary": "Page Avenue"
+        },
+        "prohibited_transitions": [
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "355cc682-495f-43b8-adcb-2f30f7755092",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "355cc682-495f-43b8-adcb-2f30f7755092",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "3b1e4be0-cd45-45f8-bddb-ce9587d62773",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "3b1e4be0-cd45-45f8-bddb-ce9587d62773",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "687e5754-45b3-45a5-8af9-031e0781cd74",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "687e5754-45b3-45a5-8af9-031e0781cd74",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "71a2c0ea-bfa9-4734-9d81-83597d791f6e",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "aac81ec3-e382-44e0-b48a-d693bad9e41e",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "aac81ec3-e382-44e0-b48a-d693bad9e41e",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "affb9040-c7f4-4520-9a7f-81c3e1542898",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "affb9040-c7f4-4520-9a7f-81c3e1542898",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "bbf1eb0b-f15e-442e-a6cc-634178d8a158",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "bbf1eb0b-f15e-442e-a6cc-634178d8a158",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "c55b7f37-4c4a-483f-8db6-25d72a296719",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "c55b7f37-4c4a-483f-8db6-25d72a296719",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "d69eab91-bcd7-40a8-aa2f-298191f5f656",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "d69eab91-bcd7-40a8-aa2f-298191f5f656",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "ddcdc130-d185-4872-b967-7a2bcff8c63c",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "ddcdc130-d185-4872-b967-7a2bcff8c63c",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "f5c65b23-ab4b-4757-8331-bed2346d915b",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "f5c65b23-ab4b-4757-8331-bed2346d915b",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "final_heading": "backward",
+            "sequence": [
+              {
+                "connector_id": "f8c38cb1-870e-41e7-bb6b-e6808e557a03",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          },
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "f8c38cb1-870e-41e7-bb6b-e6808e557a03",
+                "segment_id": "83065702-dfc1-49c4-b3fd-d430c5c4cf60"
+              }
+            ],
+            "when": {
+              "heading": "backward"
+            }
+          }
+        ],
+        "routes": [],
+        "speed_limits": [],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            -73.7957576,
+            40.9003832
+          ],
+          [
+            -73.7958867,
+            40.9001991
+          ],
+          [
+            -73.795994,
+            40.9000346
+          ],
+          [
+            -73.7960903,
+            40.8998758
+          ],
+          [
+            -73.796167,
+            40.8997353
+          ],
+          [
+            -73.7962694,
+            40.8995398
+          ],
+          [
+            -73.7963674,
+            40.8993296
+          ],
+          [
+            -73.7964603,
+            40.899122
+          ],
+          [
+            -73.796546,
+            40.8989143
+          ],
+          [
+            -73.7969765,
+            40.8978593
+          ],
+          [
+            -73.7970648,
+            40.8976488
+          ],
+          [
+            -73.7971618,
+            40.8974353
+          ],
+          [
+            -73.7972567,
+            40.8972371
+          ],
+          [
+            -73.797359,
+            40.8970287
+          ],
+          [
+            -73.7974681,
+            40.8968176
+          ],
+          [
+            -73.7975745,
+            40.8966185
+          ],
+          [
+            -73.7976314,
+            40.8965165
+          ],
+          [
+            -73.7978192,
+            40.8961777
+          ],
+          [
+            -73.797967,
+            40.8959091
+          ],
+          [
+            -73.7980742,
+            40.8957051
+          ],
+          [
+            -73.7981795,
+            40.8955005
+          ],
+          [
+            -73.7982802,
+            40.8952985
+          ],
+          [
+            -73.7983805,
+            40.895093
+          ],
+          [
+            -73.7994591,
+            40.8928202
+          ],
+          [
+            -73.799557,
+            40.8926133
+          ],
+          [
+            -73.7996568,
+            40.8924092
+          ],
+          [
+            -73.7997585,
+            40.8922059
+          ],
+          [
+            -73.7998654,
+            40.8919957
+          ],
+          [
+            -73.7999683,
+            40.8917964
+          ],
+          [
+            -73.8000778,
+            40.8915918
+          ],
+          [
+            -73.8001882,
+            40.8913873
+          ],
+          [
+            -73.8003139,
+            40.8911598
+          ],
+          [
+            -73.800427,
+            40.8909585
+          ],
+          [
+            -73.8005433,
+            40.8907557
+          ],
+          [
+            -73.8006417,
+            40.8905885
+          ],
+          [
+            -73.8007639,
+            40.8903864
+          ],
+          [
+            -73.8016103,
+            40.8889965
+          ],
+          [
+            -73.8016731,
+            40.8888956
+          ],
+          [
+            -73.8017365,
+            40.8887965
+          ],
+          [
+            -73.8018003,
+            40.8886977
+          ],
+          [
+            -73.8018665,
+            40.8885988
+          ],
+          [
+            -73.8019337,
+            40.8885004
+          ],
+          [
+            -73.8020046,
+            40.8884038
+          ],
+          [
+            -73.8020775,
+            40.8883093
+          ],
+          [
+            -73.8021512,
+            40.8882181
+          ],
+          [
+            -73.8022298,
+            40.8881268
+          ],
+          [
+            -73.8023126,
+            40.8880334
+          ],
+          [
+            -73.8023954,
+            40.8879471
+          ],
+          [
+            -73.8024822,
+            40.8878589
+          ],
+          [
+            -73.8025718,
+            40.8877722
+          ],
+          [
+            -73.8026643,
+            40.8876892
+          ],
+          [
+            -73.8027645,
+            40.8876032
+          ],
+          [
+            -73.8028623,
+            40.8875229
+          ],
+          [
+            -73.8029622,
+            40.8874451
+          ],
+          [
+            -73.803064,
+            40.8873717
+          ],
+          [
+            -73.8031714,
+            40.8872956
+          ],
+          [
+            -73.8032805,
+            40.8872224
+          ],
+          [
+            -73.80339,
+            40.887153
+          ],
+          [
+            -73.8035074,
+            40.8870813
+          ],
+          [
+            -73.8036177,
+            40.8870168
+          ],
+          [
+            -73.8037354,
+            40.8869519
+          ],
+          [
+            -73.8038567,
+            40.8868897
+          ],
+          [
+            -73.8039759,
+            40.8868311
+          ],
+          [
+            -73.8041011,
+            40.8867733
+          ],
+          [
+            -73.8042287,
+            40.886718
+          ],
+          [
+            -73.8043527,
+            40.8866669
+          ],
+          [
+            -73.8044781,
+            40.8866189
+          ],
+          [
+            -73.8046132,
+            40.8865709
+          ],
+          [
+            -73.8047463,
+            40.8865257
+          ],
+          [
+            -73.8048783,
+            40.8864842
+          ],
+          [
+            -73.8050141,
+            40.8864427
+          ],
+          [
+            -73.8051486,
+            40.8864062
+          ],
+          [
+            -73.8052838,
+            40.8863713
+          ],
+          [
+            -73.8054239,
+            40.8863389
+          ],
+          [
+            -73.8055615,
+            40.8863099
+          ],
+          [
+            -73.8057039,
+            40.8862824
+          ],
+          [
+            -73.8058446,
+            40.8862577
+          ],
+          [
+            -73.8059859,
+            40.8862357
+          ],
+          [
+            -73.8061287,
+            40.8862166
+          ],
+          [
+            -73.8062698,
+            40.8861996
+          ],
+          [
+            -73.8064172,
+            40.8861865
+          ],
+          [
+            -73.806771,
+            40.886173
+          ],
+          [
+            -73.8071351,
+            40.8861808
+          ],
+          [
+            -73.8074213,
+            40.8861888
+          ],
+          [
+            -73.8075498,
+            40.886195
+          ],
+          [
+            -73.8078559,
+            40.8862218
+          ],
+          [
+            -73.8082897,
+            40.8862795
+          ],
+          [
+            -73.8085762,
+            40.8863337
+          ],
+          [
+            -73.8090035,
+            40.8864271
+          ],
+          [
+            -73.8090548,
+            40.886439
+          ],
+          [
+            -73.809534,
+            40.8865383
+          ],
+          [
+            -73.8099699,
+            40.8866181
+          ],
+          [
+            -73.8103669,
+            40.886682
+          ],
+          [
+            -73.810807,
+            40.8867442
+          ],
+          [
+            -73.8112362,
+            40.8867957
+          ],
+          [
+            -73.8115211,
+            40.8868246
+          ],
+          [
+            -73.811973,
+            40.8868639
+          ],
+          [
+            -73.8124055,
+            40.8868915
+          ],
+          [
+            -73.8125499,
+            40.8868967
+          ],
+          [
+            -73.8126741,
+            40.8869034
+          ],
+          [
+            -73.8129667,
+            40.8869114
+          ],
+          [
+            -73.8132565,
+            40.8869148
+          ],
+          [
+            -73.8133951,
+            40.8869145
+          ],
+          [
+            -73.8136939,
+            40.8869092
+          ],
+          [
+            -73.8139959,
+            40.8868999
+          ],
+          [
+            -73.8144096,
+            40.8868755
+          ],
+          [
+            -73.8150661,
+            40.886817
+          ],
+          [
+            -73.8151312,
+            40.8868117
+          ],
+          [
+            -73.8152817,
+            40.8867958
+          ],
+          [
+            -73.8154546,
+            40.8867732
+          ],
+          [
+            -73.8157941,
+            40.8867306
+          ]
+        ],
+        "type": "LineString"
+      },
+      "id": "347d3269-4e95-4ec3-8ff2-90c406b72d45",
+      "properties": {
+        "access_restrictions": [
+          {
+            "access_type": "denied",
+            "when": {
+              "heading": "backward"
+            }
+          },
+          {
+            "access_type": "designated",
+            "when": {
+              "mode": [
+                "hgv"
+              ]
+            }
+          }
+        ],
+        "class": "motorway",
+        "connectors": [
+          {
+            "at": 0.0,
+            "connector_id": "03b80a84-6041-45e1-81ec-bcba195581eb"
+          },
+          {
+            "at": 0.786938904,
+            "connector_id": "455bdaa0-d68a-4cc6-9393-15007eab266a"
+          },
+          {
+            "at": 1.0,
+            "connector_id": "26f12d9b-0c40-4e56-ab6b-43976b0b5fbb"
+          }
+        ],
+        "id": "347d3269-4e95-4ec3-8ff2-90c406b72d45",
+        "names": {
+          "primary": "New England Thruway"
+        },
+        "prohibited_transitions": [
+          {
+            "final_heading": "forward",
+            "sequence": [
+              {
+                "connector_id": "455bdaa0-d68a-4cc6-9393-15007eab266a",
+                "segment_id": "39ab3244-85a7-4618-b98e-9cbcc8ef30f3"
+              },
+              {
+                "connector_id": "532b15ea-10e6-4a25-bd37-b31c0f1b6f8d",
+                "segment_id": "4c3197ee-1f3b-4717-91f9-683ff95a2f64"
+              }
+            ],
+            "when": {
+              "heading": "forward"
+            }
+          }
+        ],
+        "routes": [
+          {
+            "name": "Interstate 95 (NY southbound)",
+            "network": "US:I",
+            "ref": "95"
+          }
+        ],
+        "speed_limits": [
+          {
+            "between": [
+              0.0,
+              0.703270466
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 55
+            }
+          },
+          {
+            "between": [
+              0.703270466,
+              1.0
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 50
+            }
+          },
+          {
+            "between": [
+              0.0,
+              0.703270466
+            ],
+            "max_speed": {
+              "unit": "mph",
+              "value": 50
+            },
+            "when": {
+              "mode": [
+                "hgv"
+              ]
+            }
+          }
+        ],
+        "subtype": "road"
+      },
+      "type": "Feature"
+    }
+  ],
+  "type": "FeatureCollection"
+}

@@ -23,7 +23,7 @@
 //! use overrules::{Access, AccessType, Heading, Segment, Situation, TravelMode};
 //!
 //! // A street closed to motor vehicles travelling backward, except residents.
-//! let mut street = Segment::new("demo", line_string![(x: -5.99, y: 37.39), (x: -5.98, y: 37.39)])?;
+//! let mut street = Segment::new("demo", line_string![(x: -73.99, y: 40.73), (x: -73.98, y: 40.73)])?;
 //! street.access_restrictions = vec![
 //!     AccessRestriction {
 //!         access_type: AccessType::Denied,

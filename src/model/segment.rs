@@ -101,7 +101,7 @@ impl Segment {
         self.line.length_m()
     }
 
-    /// `"Calle Feria" (road/residential)`, or `<unnamed> (road/footway)`.
+    /// `"Wayne Court" (road/residential)`, or `<unnamed> (road/footway)`.
     pub fn label(&self) -> String {
         let kind = format!(
             "{}/{}",

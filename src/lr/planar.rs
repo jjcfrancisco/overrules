@@ -31,15 +31,15 @@ pub fn error_at(line: &GeodesicLine, fraction: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::seville_l;
+    use super::super::tests::l_shaped;
     use super::*;
 
     #[test]
     fn planar_and_geodesic_disagree_on_mixed_orientation_lines() {
         // A longitude degree is ~20% shorter than a latitude degree at 37°N, so a planar
         // fraction along an L-shaped line is measurably wrong.
-        let line = seville_l();
-        let corner = Point::new(-5.9825, 37.3900);
+        let line = l_shaped();
+        let corner = Point::new(-73.9818, 40.7300);
         let geodesic = line.project(corner).at.fraction;
         let planar = fraction_of(&line, corner);
         assert!((geodesic - 0.5).abs() < 0.01, "geodesic={geodesic}");

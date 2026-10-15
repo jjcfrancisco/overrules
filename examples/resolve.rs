@@ -2,22 +2,23 @@
 //!
 //! ```sh
 //! cargo run --example resolve --features parquet -- \
-//!     data/seville/segment.parquet e26d3384 --at 0.05 --heading forward --mode car
+//!     data/nyc/segment.parquet 93212c22 --at 0.8 --heading forward --mode car
 //! ```
 //!
 //! Options: `--at <0..1>`, `--heading forward|backward`, `--mode <travel mode>`,
-//! `--using <purpose>`, `--recognized <status>`, `--vehicle weight=12` (each repeatable where
-//! it makes sense). Reads GeoParquet or GeoJSON.
+//! `--time 2026-10-13T08:30`, `--using <purpose>`, `--recognized <status>`,
+//! `--vehicle weight=12` (each repeatable where it makes sense). Reads GeoParquet or GeoJSON.
 
 use std::error::Error;
 
+use chrono::NaiveDateTime;
 use overrules::eval::{Resolution, RuleEvaluation, Verdict};
 use overrules::model::Scoped;
 use overrules::{Access, Network, Situation};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1);
-    let usage = "usage: resolve <segments file> <segment id> [--at F] [--heading H] [--mode M] [--using U] [--recognized R] [--vehicle D=V]";
+    let usage = "usage: resolve <segments file> <segment id> [--at F] [--heading H] [--mode M] [--time T] [--using U] [--recognized R] [--vehicle D=V]";
     let path = args.next().ok_or(usage)?;
     let id = args.next().ok_or(usage)?;
 
@@ -28,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--at" => s.at(value.parse()?),
             "--heading" => s.heading(value.parse()?),
             "--mode" => s.mode(value.parse()?),
+            "--time" => s.time(NaiveDateTime::parse_from_str(&value, "%Y-%m-%dT%H:%M")?),
             "--using" => s.using(value),
             "--recognized" => s.recognized(value),
             "--vehicle" => s.vehicle_spec(&value)?,

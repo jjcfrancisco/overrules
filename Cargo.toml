@@ -9,7 +9,6 @@ edition = "2024"
 rust-version = "1.95"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jjcfrancisco/overrules"
-homepage = "https://github.com/jjcfrancisco/overrules"
 keywords = ["overture", "gis", "geospatial", "linear-referencing", "transportation"]
 categories = ["science::geo"]
 include = ["/src", "/examples", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE-*"]

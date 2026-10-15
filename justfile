@@ -3,9 +3,8 @@
 
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
-# The Overture release the Seville extract (and the test fixture) comes from.
-release := '2026-09-23.1'
-seville := 'data/seville/segment.parquet'
+# The New York City extract downloaded by `just data`.
+nyc := 'data/nyc/segment.parquet'
 
 # Minimum supported Rust version, read from Cargo.toml.
 msrv := `sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml`
@@ -60,7 +59,7 @@ msrv:
 deny:
     cargo deny check
 
-# Build the crate exactly as crates.io would receive it, and test that
+# Build the crate as crates.io would receive it, and check it compiles
 package:
     cargo package --allow-dirty
     @echo; cargo package --allow-dirty --list | sed 's/^/  /'
@@ -69,29 +68,29 @@ package:
 schema-check:
     python3 scripts/check_schema.py
 
-# Everything CI runs
+# Format, lint, feature checks, tests, docs, wasm32 and packaging
 ci: fmt-check clippy check-features test doc check-wasm package
 
 # ─── data ────────────────────────────────────────────────────────────────────
 
-# Download the Seville extract from Overture's S3 bucket (needs DuckDB; about 2 minutes)
+# Download the New York City extract from Overture's S3 bucket (needs DuckDB; about 2 minutes)
 data:
-    mkdir -p data/seville
-    duckdb < data/extract_seville.sql
+    mkdir -p data/nyc
+    duckdb < data/extract_nyc.sql
 
-# Rebuild the test fixture from the Seville extract
+# Rebuild the test fixture from the New York City extract
 fixtures:
-    cargo run --release -q --example export --features parquet -- {{ seville }} \
-        99698abc e26d3384 1b946971 645f3ec7 a022afe5 55c99d8b \
-        > tests/fixtures/seville.geojson
+    cargo run --release -q --example export --features parquet -- {{ nyc }} \
+        93212c22 cae646b2 11f153a8 fe1ad83f 1e5e6b7a 5797c309 83065702 347d3269 \
+        > tests/fixtures/nyc.geojson
 
-# Resolve on the Seville extract, e.g. `just resolve e26d3384 --at 0.05 --heading forward --mode car`
+# Resolve on the New York City extract, e.g. `just resolve 93212c22 --at 0.8 --heading forward --mode car`
 resolve *args:
-    cargo run --release -q --example resolve --features parquet -- {{ seville }} {{ args }}
+    cargo run --release -q --example resolve --features parquet -- {{ nyc }} {{ args }}
 
-# How far planar maths would move every `between` boundary in Seville
+# How far planar maths would move every `between` boundary in New York City
 audit:
-    cargo run --release -q --example planar_audit --features parquet -- {{ seville }}
+    cargo run --release -q --example planar_audit --features parquet -- {{ nyc }}
 
 # Remove build outputs
 clean:

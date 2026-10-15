@@ -2,7 +2,7 @@
 //! plane (lon/lat as x/y) rather than geodesically, as Overture defines them?
 //!
 //! ```sh
-//! cargo run --release --example planar_audit --features parquet -- data/seville/segment.parquet
+//! cargo run --release --example planar_audit --features parquet -- data/nyc/segment.parquet
 //! ```
 
 use std::error::Error;

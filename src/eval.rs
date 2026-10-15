@@ -292,25 +292,83 @@ fn check_heading(required: Heading, have: Option<Heading>) -> ScopeCheck {
 fn check_during(expr: &str, time: Option<NaiveDateTime>) -> ScopeCheck {
     let (verdict, because) = match time {
         None => (Verdict::Undetermined, "no time of travel given".to_owned()),
-        Some(t) => match expr.parse::<OpeningHours>() {
+        Some(t) => match parse_opening_hours(expr) {
             Err(e) => (
                 Verdict::Undetermined,
                 format!("cannot parse opening_hours: {e}"),
             ),
-            Ok(oh) => {
+            Ok((oh, repaired)) => {
                 let when = t.format("%a %Y-%m-%d %H:%M");
+                let note = repaired
+                    .map(|r| format!(" (read \"{expr}\" as \"{r}\")"))
+                    .unwrap_or_default();
                 match oh.state(t).0 {
-                    RuleKind::Open => (Verdict::Match, format!("{when} is inside")),
-                    RuleKind::Closed => (Verdict::NoMatch, format!("{when} is outside")),
+                    RuleKind::Open => (Verdict::Match, format!("{when} is inside{note}")),
+                    RuleKind::Closed => (Verdict::NoMatch, format!("{when} is outside{note}")),
                     RuleKind::Unknown => (
                         Verdict::Undetermined,
-                        "opening_hours evaluates to 'unknown'".to_owned(),
+                        format!("opening_hours evaluates to 'unknown'{note}"),
                     ),
                 }
             }
         },
     };
     check(Scope::During, expr, verdict, because)
+}
+
+/// Parses an `opening_hours` expression. If it does not parse as written, tries once more
+/// with [`repair_opening_hours`]; the repaired text is returned so the caller can say so.
+fn parse_opening_hours(expr: &str) -> Result<(OpeningHours, Option<String>), String> {
+    match expr.parse::<OpeningHours>() {
+        Ok(oh) => Ok((oh, None)),
+        Err(original) => {
+            let repaired = repair_opening_hours(expr).ok_or_else(|| original.to_string())?;
+            let oh = repaired
+                .parse::<OpeningHours>()
+                .map_err(|_| original.to_string())?;
+            Ok((oh, Some(repaired)))
+        }
+    }
+}
+
+/// Restores the separators Overture data is missing in some `opening_hours` values:
+///
+/// * a space between days and times: `Mo-Fr07:00-18:00` → `Mo-Fr 07:00-18:00`;
+/// * a comma between consecutive time ranges: `07:00-09:0014:00-16:00` →
+///   `07:00-09:00,14:00-16:00`;
+/// * a comma between consecutive days: `SaSu10:00-13:00` → `Sa,Su 10:00-13:00`.
+///
+/// Returns `None` if none of these patterns occurs.
+fn repair_opening_hours(expr: &str) -> Option<String> {
+    const DAYS: [&str; 9] = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su", "PH", "SH"];
+    let chars: Vec<char> = expr.chars().collect();
+    let is_day = |at: usize| {
+        chars.get(at..at + 2).is_some_and(|pair| {
+            let pair: String = pair.iter().collect();
+            DAYS.contains(&pair.as_str())
+        })
+    };
+    let mut out = String::with_capacity(expr.len() + 4);
+    let mut changed = false;
+    for (i, &c) in chars.iter().enumerate() {
+        let after_day = i >= 2 && is_day(i - 2);
+        // `…HH:MM` immediately followed by another digit.
+        let after_time = i >= 5
+            && chars[i - 5].is_ascii_digit()
+            && chars[i - 4].is_ascii_digit()
+            && chars[i - 3] == ':'
+            && chars[i - 2].is_ascii_digit()
+            && chars[i - 1].is_ascii_digit();
+        if c.is_ascii_digit() && after_day {
+            out.push(' ');
+            changed = true;
+        } else if (c.is_ascii_digit() && after_time) || (after_day && is_day(i)) {
+            out.push(',');
+            changed = true;
+        }
+        out.push(c);
+    }
+    changed.then_some(out)
 }
 
 fn check_mode(modes: &[TravelMode], have: Option<&TravelMode>) -> ScopeCheck {
@@ -395,7 +453,7 @@ mod tests {
     use chrono::NaiveDate;
 
     use super::*;
-    use crate::model::{AccessRestriction, AccessType, Comparison, Dimension, Unit};
+    use crate::model::{AccessRestriction, AccessType, Comparison, Dimension, SpeedLimit, Unit};
 
     fn access(access_type: AccessType, when: When) -> AccessRestriction {
         AccessRestriction {
@@ -550,5 +608,75 @@ mod tests {
         ];
         let set = all_matches(&rules, &Situation::new());
         assert_eq!(set.in_force, vec![0, 1]);
+    }
+
+    #[test]
+    fn repairs_missing_separators_in_opening_hours() {
+        assert_eq!(
+            repair_opening_hours("Mo-Fr07:00-18:00").as_deref(),
+            Some("Mo-Fr 07:00-18:00")
+        );
+        assert_eq!(
+            repair_opening_hours("Fr17:00-23:00; Sa-Su12:00-23:00").as_deref(),
+            Some("Fr 17:00-23:00; Sa-Su 12:00-23:00")
+        );
+        assert_eq!(
+            repair_opening_hours("Mo-Fr07:00-09:0014:00-16:00").as_deref(),
+            Some("Mo-Fr 07:00-09:00,14:00-16:00")
+        );
+        assert_eq!(
+            repair_opening_hours("Mo-Fr10:00-15:00; SaSu10:00-13:00").as_deref(),
+            Some("Mo-Fr 10:00-15:00; Sa,Su 10:00-13:00")
+        );
+        assert_eq!(
+            repair_opening_hours("Tu-ThSu12:00-22:00").as_deref(),
+            Some("Tu-Th,Su 12:00-22:00")
+        );
+        assert_eq!(repair_opening_hours("Mo-Fr 07:00-18:00"), None);
+        assert_eq!(repair_opening_hours("08:00-20:00"), None);
+    }
+
+    #[test]
+    fn a_repaired_time_rule_applies_and_says_so() {
+        let rule = SpeedLimit {
+            max_speed: None,
+            min_speed: None,
+            is_max_speed_variable: None,
+            when: Some(When {
+                during: Some("Mo-Fr07:00-18:00".into()),
+                ..When::default()
+            }),
+            between: None,
+        };
+        let tuesday = evaluate(0, &rule, &Situation::new().time(at(13, 8, 30)));
+        assert_eq!(tuesday.verdict, Verdict::Match);
+        assert!(
+            tuesday.scopes[0]
+                .because
+                .contains("read \"Mo-Fr07:00-18:00\" as \"Mo-Fr 07:00-18:00\"")
+        );
+        let sunday = evaluate(0, &rule, &Situation::new().time(at(18, 8, 30)));
+        assert_eq!(sunday.verdict, Verdict::NoMatch);
+    }
+
+    #[test]
+    fn an_unreadable_time_rule_stays_undetermined() {
+        let rule = SpeedLimit {
+            max_speed: None,
+            min_speed: None,
+            is_max_speed_variable: None,
+            when: Some(When {
+                during: Some("whenever".into()),
+                ..When::default()
+            }),
+            between: None,
+        };
+        let e = evaluate(0, &rule, &Situation::new().time(at(13, 8, 30)));
+        assert_eq!(e.verdict, Verdict::Undetermined);
+        assert!(
+            e.scopes[0]
+                .because
+                .starts_with("cannot parse opening_hours")
+        );
     }
 }

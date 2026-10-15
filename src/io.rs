@@ -53,9 +53,9 @@ mod tests {
     fn reads_the_fixture() {
         let segments = read_path(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/tests/fixtures/seville.geojson"
+            "/tests/fixtures/nyc.geojson"
         ))
         .unwrap();
-        assert_eq!(segments.len(), 6);
+        assert_eq!(segments.len(), 8);
     }
 }

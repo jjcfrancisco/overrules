@@ -23,38 +23,36 @@ Add `overrules` to your dependencies:
 overrules = { version = "0.1", features = ["parquet"] }
 ```
 
-This example uses the Seville extract downloaded by `just data`:
+Overture publishes its data as GeoParquet, which needs the `parquet` feature. GeoJSON, handy
+for small extracts, is always available. This example reads a segment file and asks about one
+segment:
 
 ```rust,no_run
 use overrules::{Heading, Network, Situation, TravelMode};
 
 fn main() -> overrules::Result<()> {
-    let net = Network::new(overrules::io::read_path("data/seville/segment.parquet")?);
-    let segment = net.lookup("e26d3384-0e65-4601-9c1c-4ce06466d3b2")?; // GERS id
+    let net = Network::new(overrules::io::read_path("segment.parquet")?);
+    let segment = net.lookup("93212c22-eee0-4a9d-872a-c63dcf56dfa9")?; // GERS id
     let traveller = Situation::new()
-        .at(0.05)
+        .at(0.8)
         .heading(Heading::Forward)
         .mode(TravelMode::Car);
 
     let answer = overrules::resolve(segment, &traveller)?;
-    assert_eq!(answer.speed_limit_rule().and_then(|r| r.max_speed).map(|s| s.value), Some(80));
-    assert_eq!(answer.speed_limit.determining, Some(5));
+    assert_eq!(answer.speed_limit_rule().and_then(|r| r.max_speed).map(|s| s.value), Some(20));
+    assert_eq!(answer.speed_limit.determining, Some(4));
     assert!(answer.speed_limit.is_settled());
     Ok(())
 }
 ```
 
-That segment's first rule says **90 km/h**, but at this position the result is **80 forward**
-or **50 backward**. To see the full explanations:
+That segment, 21st Avenue in New York City, has five speed rules. The first says **15 mph**,
+but at this position the answer is **20 mph travelling forward** and **25 mph travelling
+backward**.
 
-```sh
-just resolve e26d3384 --at 0.05 --heading forward --mode car
-just resolve e26d3384 --at 0.05 --heading backward --mode car
-```
-
-GeoJSON reading is always available. Parquet needs the `parquet` feature. You can also build
-segments directly with `Segment::new`. The library provides geodesic position conversion,
-line slicing, lookup by id/name and nearest-segment search, and compiles to WebAssembly.
+You can also build segments directly with `Segment::new`. The library provides geodesic
+position conversion, line slicing, lookup by id or name and nearest-segment search, and
+compiles to WebAssembly.
 
 ## Reading an answer
 
@@ -66,7 +64,8 @@ line slicing, lookup by id/name and nearest-segment search, and compiles to WebA
 - Prohibited turns have both `in_force` and `could_apply` lists.
 - Omitted purposes and recognised statuses mean none were claimed, rather than unknown.
 - Readers fail the whole read on an invalid record. `Error::InvalidRecord` identifies the
-  segment and field. See the `Error` API docs for an example (`just doc --open`).
+  segment and field. The [`Error` docs](https://docs.rs/overrules/latest/overrules/enum.Error.html)
+  have an example.
 
 The supported fields, schema-version limits and interpretation decisions are documented in
 **[docs/semantics.md](docs/semantics.md)**. The [draft conformance vectors](tests/vectors)

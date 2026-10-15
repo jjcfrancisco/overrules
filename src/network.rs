@@ -264,12 +264,12 @@ mod tests {
     use super::*;
 
     fn seg(id: &str, y: f64) -> Segment {
-        Segment::new(id, line_string![(x: -5.99, y: y), (x: -5.98, y: y)]).unwrap()
+        Segment::new(id, line_string![(x: -73.99, y: y), (x: -73.98, y: y)]).unwrap()
     }
 
     #[test]
     fn looks_up_ids_and_prefixes() {
-        let net: Network = [seg("abc1", 37.0), seg("abc2", 37.1), seg("xyz", 37.2)]
+        let net: Network = [seg("abc1", 40.7), seg("abc2", 40.8), seg("xyz", 40.9)]
             .into_iter()
             .collect();
         assert_eq!(net.lookup("xy").unwrap().id, "xyz");
@@ -282,10 +282,10 @@ mod tests {
 
     #[test]
     fn nearest_is_by_geodesic_distance() {
-        let net: Network = [seg("south", 37.0), seg("north", 37.1)]
+        let net: Network = [seg("south", 40.7), seg("north", 40.8)]
             .into_iter()
             .collect();
-        let hit = net.snap(Point::new(-5.985, 37.09)).unwrap();
+        let hit = net.snap(Point::new(-73.985, 40.79)).unwrap();
         assert_eq!(hit.segment.id, "north");
         assert!((hit.projection.at.fraction - 0.5).abs() < 0.01);
         assert!(Network::new(vec![]).snap(Point::new(0.0, 0.0)).is_err());

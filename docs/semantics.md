@@ -17,7 +17,7 @@ travel modes, vehicle dimensions, comparisons, units, access types) are exactly 
 
 **Choice:** strict. A value outside those lists (say a new access type) is not guessed at: the
 file fails to load with an error naming the segment and the field, e.g.
-`segment 1b94…: cannot read access_restrictions[2].access_type: unknown variant "permissive"`.
+`segment cae6…: cannot read access_restrictions[2].access_type: unknown variant "permissive"`.
 Travel modes are the one exception (§3).
 
 This describes the **supported fields**, not full schema validation. Readers ignore unmodelled
@@ -137,8 +137,16 @@ resident-only exception would leave every answer unsettled.
 - `forward` means travelling in the order of the segment's coordinates.
 - `during` uses the OpenStreetMap `opening_hours` syntax, evaluated with the
   [`opening-hours`](https://crates.io/crates/opening-hours) crate against the traveller's
-  **local** time (no time zone). An expression that does not parse, or that evaluates to
-  `unknown`, leaves the condition `undetermined`.
+  **local** time (no time zone).
+- Some Overture values are missing separators that `opening_hours` requires, e.g.
+  `Mo-Fr07:00-18:00` for `Mo-Fr 07:00-18:00`. In the `2026-09-23.1` New York City extract, 217
+  of 609 time rules are written this way. **Choice:** if a value does not parse as written,
+  `overrules` restores three missing separators and tries once more: the space between days and
+  times, the comma between back-to-back time ranges (`09:0014:00`), and the comma between
+  back-to-back days (`SaSu`). The explanation shows the value as read. The data itself is not
+  changed.
+- An expression that still does not parse, or that evaluates to `unknown`, leaves the condition
+  `undetermined`.
 
 ## 8. Defaults
 

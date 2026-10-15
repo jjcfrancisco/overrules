@@ -1,4 +1,2 @@
 /target
-/dist
-/data/seville/*.parquet
-/data/seville/*.log
+/data/nyc/*.parquet

@@ -1,7 +1,7 @@
 //! Write chosen segments as GeoJSON, the format of the test fixtures.
 //!
 //! ```sh
-//! cargo run --example export --features parquet -- data/seville/segment.parquet e26d3384 1b946971
+//! cargo run --example export --features parquet -- data/nyc/segment.parquet 93212c22 cae646b2
 //! ```
 
 use std::error::Error;

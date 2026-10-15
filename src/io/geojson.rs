@@ -131,11 +131,11 @@ mod tests {
 
     const FEATURE: &str = r#"{
         "type": "Feature", "id": "seg-1",
-        "geometry": {"type": "LineString", "coordinates": [[-5.99, 37.39, 12.0], [-5.98, 37.39]]},
+        "geometry": {"type": "LineString", "coordinates": [[-73.99, 40.73, 12.0], [-73.98, 40.73]]},
         "properties": {
-            "subtype": "road", "class": "residential", "names": {"primary": "Calle Feria"},
+            "subtype": "road", "class": "residential", "names": {"primary": "Wayne Court"},
             "connectors": [{"connector_id": "c1", "at": 0}, {"connector_id": "c2", "at": 1}],
-            "speed_limits": [{"max_speed": {"value": 30, "unit": "km/h"}}],
+            "speed_limits": [{"max_speed": {"value": 25, "unit": "mph"}}],
             "access_restrictions": null
         }
     }"#;
@@ -145,7 +145,7 @@ mod tests {
         let segs = read(FEATURE.as_bytes()).unwrap();
         let s = &segs[0];
         assert_eq!(s.id, "seg-1");
-        assert_eq!(s.name.as_deref(), Some("Calle Feria"));
+        assert_eq!(s.name.as_deref(), Some("Wayne Court"));
         assert_eq!(s.connectors.len(), 2);
         assert_eq!(s.speed_limits.len(), 1);
         assert_eq!(s.access_restrictions.len(), 0);

@@ -14,7 +14,7 @@ just test       # what you will run most
 just ci         # format, lint, feature checks, tests, docs, wasm32 and packaging
 ```
 
-Tests use checked-in fixtures. Downloading Seville is only needed for the city examples and
+Tests use checked-in fixtures. Downloading New York City is only needed for the city examples and
 fixture regeneration. `just package` verifies that the archive compiles. It does not publish
 the crate or run its test suite. Run `just test` for tests.
 
@@ -22,14 +22,21 @@ the crate or run its test suite. Run `just test` for tests.
 |---|---|
 | `just fmt` / `just clippy` | Format / lint |
 | `just doc --open` | Read the API docs |
-| `just data` | Download Seville with DuckDB |
-| `just resolve <id> …` | Explain rules on a Seville segment |
-| `just audit` | Measure planar versus geodesic rule-boundary error across Seville |
+| `just data` | Download New York City with DuckDB |
+| `just resolve <id> …` | Explain rules on a New York City segment |
+| `just audit` | Measure planar versus geodesic rule-boundary error across New York City |
 | `just fixtures` | Regenerate the committed fixture from the extract |
 
-On the `2026-09-23.1` Seville extract, `just audit` finds 117 of 644 segments with a rule
-boundary more than 5 m off under planar maths. The worst motorway example moves by about
-50 m. The expected rule outcomes are in [`tests/vectors`](tests/vectors).
+On the `2026-09-23.1` New York City extract, `just audit` finds 959 of 7,413 segments with a
+rule boundary more than 5 m off under planar maths. The worst, on the Jamaica Bay Greenway
+cycleway, moves by about 140 m. The expected rule outcomes are in [`tests/vectors`](tests/vectors).
+
+To see the full explanation for the README example, after `just data`:
+
+```sh
+just resolve 93212c22 --at 0.8 --heading forward --mode car
+just resolve 93212c22 --at 0.8 --heading backward --mode car
+```
 
 The separate checks are `just msrv`, `just deny` (requires `cargo-deny`), and
 `just schema-check` (Python 3 and network access).
@@ -71,7 +78,7 @@ comparison. The scheduled job runs each Monday and can also be run manually on G
 ## Style
 
 - `cargo fmt`, and clippy with pedantic lints, warnings as errors (`just clippy`).
-- Library crates return their own `Error` (`thiserror`), never `anyhow`, and never panic on bad
+- The library returns its own `Error` (`thiserror`), never `anyhow`, and never panics on bad
   input or data.
 - Commit and PR titles use lowercase [Conventional Commits](https://www.conventionalcommits.org/)
   with a scope, e.g. `fix(io): preserve structured collection errors`.

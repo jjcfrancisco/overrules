@@ -12,6 +12,8 @@ First release. Supports Overture schema 2.0.0 and Rust 1.95 or later.
   at a position on a segment, with an explanation for every rule and condition.
 - Missing facts leave a rule undetermined. Answers list the rules that could still override
   the result.
+- Time rules (`during`) missing a separator, as some Overture values are, are read with the
+  separator restored. The explanation shows how the value was read.
 - Typed Overture model: headings, travel modes and their taxonomy, vehicle selectors with
   unit conversion, `between` ranges.
 - Geodesic linear referencing on WGS84: fraction to point, point to fraction, bearings and

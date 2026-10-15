@@ -43,7 +43,7 @@ pub enum Access {
 /// # use overrules::{Segment, Situation, TravelMode, Heading, Access, AccessType};
 /// # use overrules::model::{AccessRestriction, When};
 /// # use geo::line_string;
-/// let mut seg = Segment::new("demo", line_string![(x: -5.99, y: 37.39), (x: -5.98, y: 37.39)])?;
+/// let mut seg = Segment::new("demo", line_string![(x: -73.99, y: 40.73), (x: -73.98, y: 40.73)])?;
 /// seg.access_restrictions.push(AccessRestriction {
 ///     access_type: AccessType::Denied,
 ///     when: Some(When { heading: Some(Heading::Backward), ..When::default() }),
