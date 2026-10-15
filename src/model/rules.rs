@@ -114,7 +114,7 @@ pub struct SpeedLimit {
     pub between: Option<Between>,
 }
 
-/// Renders the value of the rule, e.g. `max 50 km/h, min 20 km/h`.
+/// Renders the value of the rule, e.g. `max 25 mph`.
 impl fmt::Display for SpeedLimit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();

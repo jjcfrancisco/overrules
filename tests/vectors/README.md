@@ -24,7 +24,7 @@ run, so they agree on what the data means. The format is a draft and will change
       },
       "expect": {                             // only the fields given are checked
         "access":        { "determining": 1, "could_override": [], "value": "denied" },
-        "speed_limit":   { "determining": 5, "could_override": [], "max_speed": { "value": 80, "unit": "km/h" } },
+        "speed_limit":   { "determining": 4, "could_override": [], "max_speed": { "value": 20, "unit": "mph" } },
         "prohibited_transitions": { "in_force": [0, 3], "could_apply": [] }
       }
     }

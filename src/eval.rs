@@ -1,8 +1,10 @@
 //! Rule evaluation, as the Overture guide "Scoping and travel modes" specifies it:
 //!
-//! 1. a rule **matches** when *all* of its scoping conditions hold (logical AND);
-//! 2. the **determining rule** is the *last* matching rule in the list;
-//! 3. with no matching rule, a property-specific default applies.
+//! 1. A rule **matches** when *all* of its scoping conditions hold (logical AND).
+//! 2. For speed limits and access restrictions, the **determining rule** is the *last*
+//!    matching rule in the list ([`last_match`]). For prohibited transitions, every matching
+//!    rule is in force ([`all_matches`]).
+//! 3. With no matching rule, a property-specific default applies.
 //!
 //! Evaluation is three-valued. A condition can hold, fail, or be *undetermined* because
 //! the [`Situation`] does not supply the fact it depends on (a `during` rule with no time

@@ -77,8 +77,6 @@ Run `just test` for tests, `just ci` for local checks, or `just` to list recipes
 checked-in fixtures, so no data download is needed. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 setup, other checks and schema-update instructions.
 
-The goal is a rule evaluator and shared test suite, not a router or data pipeline.
-
 ## Licence
 
 Code: [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.

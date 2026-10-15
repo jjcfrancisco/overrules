@@ -96,7 +96,7 @@ pub use answer::{Access, Answer, resolve};
 pub use error::{Error, ErrorKind, Result};
 pub use eval::{Resolution, SetResolution, Verdict};
 pub use model::{AccessType, Dimension, Heading, Segment, TravelMode};
-pub use network::{Hit, Network, RuleStats, Stats};
+pub use network::{Hit, Network};
 pub use situation::Situation;
 
 /// Compiles the README's Rust examples as doc tests.

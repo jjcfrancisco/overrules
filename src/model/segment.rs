@@ -23,7 +23,7 @@ pub struct Route {
     /// Highway system the route belongs to.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub network: Option<String>,
-    /// Code or number of the route, e.g. `SE-30`.
+    /// Code or number of the route, e.g. `I-278`.
     #[serde(default, rename = "ref", skip_serializing_if = "Option::is_none")]
     pub reference: Option<String>,
     /// The stretch of the segment that is on the route.
@@ -112,27 +112,6 @@ impl Segment {
             Some(n) => format!("\"{n}\" ({kind})"),
             None => format!("<unnamed> ({kind})"),
         }
-    }
-
-    /// Whether any speed limit or access restriction applies to only part of the segment.
-    pub fn has_between(&self) -> bool {
-        self.access_restrictions.iter().any(|r| r.between.is_some())
-            || self.speed_limits.iter().any(|r| r.between.is_some())
-    }
-
-    /// Every distinct `between` boundary strictly inside the segment, ascending.
-    pub fn boundaries(&self) -> Vec<f64> {
-        let mut out: Vec<f64> = self
-            .access_restrictions
-            .iter()
-            .filter_map(|r| r.between)
-            .chain(self.speed_limits.iter().filter_map(|r| r.between))
-            .flat_map(|b| [b.start, b.end])
-            .filter(|f| *f > 0.0 && *f < 1.0)
-            .collect();
-        out.sort_by(f64::total_cmp);
-        out.dedup();
-        out
     }
 
     pub(crate) fn from_record(record: Record, geometry: LineString<f64>) -> Result<Self> {

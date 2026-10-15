@@ -2,7 +2,7 @@
 //!
 //! Uses the parquet crate's row API and lets serde decode the nested structs and lists
 //! through JSON values. That keeps schema handling to a few dozen lines, at some cost in
-//! speed: fine for a city or a country, not for the planet.
+//! speed: fine for a city or region, not for the planet.
 
 use std::fs::File;
 use std::path::Path;

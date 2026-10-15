@@ -1,11 +1,10 @@
 //! An in-memory set of segments: lookup by id or name, and nearest-segment search.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use geo::{BoundingRect, Point};
 use rstar::RTree;
 use rstar::primitives::{GeomWithData, Rectangle};
-use serde::Serialize;
 
 use crate::lr::Projection;
 use crate::model::Segment;
@@ -153,107 +152,11 @@ impl Network {
             .next()
             .ok_or(Error::EmptyNetwork)
     }
-
-    /// Counts of what the network holds and how much of it is scoped.
-    pub fn stats(&self) -> Stats {
-        let mut st = Stats::default();
-        for s in &self.segments {
-            st.segments += 1;
-            st.length_km += s.length_m() / 1000.0;
-            st.connector_refs += s.connectors.len();
-            let kind = format!(
-                "{}/{}",
-                s.subtype.as_deref().unwrap_or("?"),
-                s.class.as_deref().unwrap_or("?")
-            );
-            *st.by_class.entry(kind).or_default() += 1;
-            st.segments_with_between += usize::from(s.has_between());
-            st.speed_limits.add(
-                s.speed_limits
-                    .iter()
-                    .map(|r| (r.when.as_ref(), r.between.is_some())),
-            );
-            st.access_restrictions.add(
-                s.access_restrictions
-                    .iter()
-                    .map(|r| (r.when.as_ref(), r.between.is_some())),
-            );
-            st.prohibited_transitions.add(
-                s.prohibited_transitions
-                    .iter()
-                    .map(|r| (r.when.as_ref(), r.between.is_some())),
-            );
-        }
-        st
-    }
 }
 
 impl FromIterator<Segment> for Network {
     fn from_iter<I: IntoIterator<Item = Segment>>(iter: I) -> Self {
         Self::new(iter.into_iter().collect())
-    }
-}
-
-/// What a [`Network`] holds; see [`Network::stats`].
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
-pub struct Stats {
-    /// Number of segments.
-    pub segments: usize,
-    /// Total geodesic length, in kilometres.
-    pub length_km: f64,
-    /// Connector references, counted per segment.
-    pub connector_refs: usize,
-    /// Segments per `subtype/class`.
-    pub by_class: BTreeMap<String, usize>,
-    /// Segments with at least one `between`-scoped speed limit or access restriction.
-    pub segments_with_between: usize,
-    /// `speed_limits` counts.
-    pub speed_limits: RuleStats,
-    /// `access_restrictions` counts.
-    pub access_restrictions: RuleStats,
-    /// `prohibited_transitions` counts.
-    pub prohibited_transitions: RuleStats,
-}
-
-/// Counts for one rule-based property.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
-pub struct RuleStats {
-    /// Rules in total.
-    pub rules: usize,
-    /// Segments with at least one rule.
-    pub segments: usize,
-    /// Rules scoped by `between`.
-    pub between: usize,
-    /// Rules scoped by `when.heading`.
-    pub heading: usize,
-    /// Rules scoped by `when.during`.
-    pub during: usize,
-    /// Rules scoped by `when.mode`.
-    pub mode: usize,
-    /// Rules scoped by `when.using`.
-    pub using: usize,
-    /// Rules scoped by `when.recognized`.
-    pub recognized: usize,
-    /// Rules scoped by `when.vehicle`.
-    pub vehicle: usize,
-}
-
-impl RuleStats {
-    fn add<'w>(&mut self, rules: impl Iterator<Item = (Option<&'w crate::model::When>, bool)>) {
-        let before = self.rules;
-        for (when, between) in rules {
-            self.rules += 1;
-            self.between += usize::from(between);
-            if let Some(w) = when {
-                self.heading += usize::from(w.heading.is_some());
-                self.during += usize::from(w.during.is_some());
-                self.mode += usize::from(w.mode.is_some());
-                self.using += usize::from(w.using.is_some());
-                self.recognized += usize::from(w.recognized.is_some());
-                self.vehicle += usize::from(w.vehicle.is_some());
-            }
-        }
-        self.segments += usize::from(self.rules > before);
     }
 }
 

@@ -2,8 +2,9 @@
 
 /// Errors returned by `overrules`.
 ///
-/// Variants describe *what* went wrong. Front ends that need to decide *whose* fault it
-/// was (a 400 or a 500, say) should ask [`Error::kind`] instead of matching variants.
+/// Variants describe *what* went wrong. Applications that only need to know *whose* fault
+/// it was (bad input, bad data, or something missing) can ask [`Error::kind`] instead of
+/// matching variants.
 ///
 /// Readers fail the whole read rather than returning a partial network. Property decoding
 /// errors retain the segment ID and field path, including inside GeoJSON collections.
