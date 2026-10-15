@@ -317,7 +317,7 @@ pub(crate) mod tests {
         let corner = line.point_at(half);
         assert!((corner.lon - -73.9818).abs() < 1e-9 && (corner.lat - 40.73).abs() < 1e-9);
         let end = line.point_at(1.0);
-        assert_eq!((end.lon, end.lat), (-73.9818, 40.74));
+        assert!((end.lon - -73.9818).abs() < 1e-9 && (end.lat - 40.74).abs() < 1e-9);
     }
 
     #[test]
