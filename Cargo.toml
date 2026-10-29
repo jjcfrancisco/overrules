@@ -16,7 +16,7 @@ include = ["/src", "/examples", "/tests", "/docs/semantics.md", "/README.md", "/
 [features]
 default = []
 ## Read Overture `segment` GeoParquet files.
-parquet = ["dep:base64", "dep:geozero", "dep:parquet"]
+parquet = ["dep:base64", "dep:geozero", "dep:parquet", "dep:zstd"]
 
 [dependencies]
 base64 = { version = "0.23", optional = true }
@@ -31,6 +31,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
 thiserror = "2"
+# Require the patched compression chain even when consumers reuse an older lockfile.
+zstd = { version = "0.14.3", default-features = false, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

@@ -23,6 +23,8 @@ Supports Overture schema 2.0.0 and Rust 1.95 or later.
   Add `resolve_compact` to return rule choices and uncertainty without explanation strings.
 - Add geographic regressions and Parquet fixture tests for Snappy, ZSTD, invalid nested
   records and malformed WKB. Check compact results against the conformance vectors.
+- Require patched ZSTD dependencies for Parquet, addressing RUSTSEC-2026-0391,
+  RUSTSEC-2026-0398, RUSTSEC-2026-0403 and RUSTSEC-2026-0410.
 - Add an explicit visual demo section linking to overrules-city.
 
 ## 0.1.0 (2026-10-15)
