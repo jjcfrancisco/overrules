@@ -29,6 +29,12 @@ pub enum GeometryError {
     /// NaN or infinite coordinates.
     #[error("vertex {0} has a non-finite coordinate")]
     NonFinite(usize),
+    /// A vertex is outside longitude -180..=180 or latitude -90..=90.
+    #[error("vertex {0} is outside WGS84 longitude/latitude bounds")]
+    OutOfRange(usize),
+    /// A query point must have finite WGS84 longitude and latitude.
+    #[error("query point must have finite longitude in -180..=180 and latitude in -90..=90")]
+    InvalidPoint,
 }
 
 /// A WGS84 linestring together with the cumulative geodesic length at each vertex.
@@ -70,7 +76,7 @@ pub struct Projection {
 }
 
 impl GeodesicLine {
-    /// Measures `geometry`. It needs at least two vertices, all finite.
+    /// Measures `geometry`. It needs at least two vertices, all valid WGS84 coordinates.
     pub fn new(geometry: LineString<f64>) -> Result<Self, GeometryError> {
         let n = geometry.0.len();
         if n < 2 {
@@ -82,6 +88,13 @@ impl GeodesicLine {
             .position(|c| !(c.x.is_finite() && c.y.is_finite()))
         {
             return Err(GeometryError::NonFinite(i));
+        }
+        if let Some(i) = geometry
+            .0
+            .iter()
+            .position(|c| validate_point(Point(*c)).is_err())
+        {
+            return Err(GeometryError::OutOfRange(i));
         }
         let mut cumulative_m = Vec::with_capacity(n);
         let mut acc = 0.0;
@@ -152,7 +165,9 @@ impl GeodesicLine {
     }
 
     /// The closest point on the line to `q`, on the WGS84 ellipsoid.
-    pub fn project(&self, q: Point<f64>) -> Projection {
+    /// Returns an error for non-finite or out-of-range coordinates.
+    pub fn project(&self, q: Point<f64>) -> Result<Projection, GeometryError> {
+        validate_point(q)?;
         let n = self.geometry.0.len();
         // Distances from q to every vertex, reused for the pruning bound.
         let dv: Vec<f64> = (0..n)
@@ -177,7 +192,7 @@ impl GeodesicLine {
             }
         }
         let (offset_m, metres, p, vertex_index) = best;
-        Projection {
+        Ok(Projection {
             at: Located {
                 fraction: self.metres_to_fraction(metres),
                 metres_from_start: metres,
@@ -186,16 +201,28 @@ impl GeodesicLine {
                 vertex_index,
             },
             offset_m,
-        }
+        })
     }
 
     /// Compass bearing (degrees clockwise from north, `0..360`) of the line's own
     /// direction at a position: the bearing of a `forward` traveller there.
     pub fn bearing_at(&self, at: &Located) -> f64 {
-        let i = at.vertex_index.min(self.geometry.0.len() - 2);
-        Geodesic
-            .bearing(self.vertex(i), self.vertex(i + 1))
-            .rem_euclid(360.0)
+        let start = at.vertex_index.min(self.geometry.0.len() - 2);
+        let nonzero = |&i: &usize| self.cumulative_m[i + 1] > self.cumulative_m[i];
+        let Some(i) = (start..self.geometry.0.len() - 1)
+            .find(nonzero)
+            .or_else(|| (0..start).rev().find(nonzero))
+        else {
+            return 0.0;
+        };
+        let bearing = if at.metres_from_start >= self.cumulative_m[i + 1] {
+            Geodesic.bearing(self.vertex(i + 1), self.vertex(i)) + 180.0
+        } else if at.metres_from_start <= self.cumulative_m[i] {
+            Geodesic.bearing(self.vertex(i), self.vertex(i + 1))
+        } else {
+            Geodesic.bearing(at.point(), self.vertex(i + 1))
+        };
+        bearing.rem_euclid(360.0)
     }
 
     /// The part of the line between two linear references, in line order.
@@ -209,11 +236,19 @@ impl GeodesicLine {
                 .map(|i| self.geometry.0[i])
                 .filter(|c| (c.x, c.y) != (a.lon, a.lat)),
         );
-        if coords.last() != Some(&Coord { x: b.lon, y: b.lat }) {
+        if coords.len() == 1 || coords.last() != Some(&Coord { x: b.lon, y: b.lat }) {
             coords.push(Coord { x: b.lon, y: b.lat });
         }
         LineString(coords)
     }
+}
+
+/// Checks longitude/latitude before passing them to geodesic maths or a spatial index.
+pub(crate) fn validate_point(point: Point<f64>) -> Result<(), GeometryError> {
+    if !(-180.0..=180.0).contains(&point.x()) || !(-90.0..=90.0).contains(&point.y()) {
+        return Err(GeometryError::InvalidPoint);
+    }
+    Ok(())
 }
 
 /// Minimise the geodesic distance from `q` to the geodesic arc a→b over t ∈ [0, 1].
@@ -229,8 +264,8 @@ fn golden_section(q: Point<f64>, a: Point<f64>, b: Point<f64>, len: f64) -> (f64
     let mut d = lo + inv_phi * (hi - lo);
     let mut fc = f(c).0;
     let mut fd = f(d).0;
-    // Stop when the bracket is below 0.1 mm along the arc.
-    let tol = (1e-4 / len.max(1e-9)).min(0.5);
+    // Converge well inside Between's 1e-9 fraction tolerance, including on short arcs.
+    let tol = 1e-11;
     let mut iters = 0;
     while (hi - lo) > tol && iters < 200 {
         if fc < fd {
@@ -300,7 +335,7 @@ pub(crate) mod tests {
         let line = l_shaped();
         for f in [0.0, 0.1, 0.37, 0.5, 0.73, 1.0] {
             let at = line.point_at(f);
-            let back = line.project(at.point());
+            let back = line.project(at.point()).unwrap();
             assert!(
                 (back.at.fraction - f).abs() < 1e-6,
                 "f={f} got {}",

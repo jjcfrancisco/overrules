@@ -147,6 +147,34 @@ resident-only exception would leave every answer unsettled.
   changed.
 - An expression that still does not parse, or that evaluates to `unknown`, leaves the condition
   `undetermined`.
+- **Since 0.2:** an expression containing public or school holidays (`PH`, `SH`) or solar
+  events (`sunrise`, `sunset`, `dawn`, `dusk`, including offsets) is also `undetermined`.
+  This API does not supply the holiday calendar, location and time zone those expressions
+  require. It never substitutes an empty calendar or fixed solar times. Detection uses the
+  parsed expression, so these words inside quoted comments do not affect evaluation.
+  The whole time expression is conservatively undetermined, including holiday exceptions.
+  Another failed scope, such as an opposite heading, still makes the rule `no_match`.
+- Dates outside the evaluator's supported years, 1900 through 9999, are `undetermined`.
+- `PreparedSegment` caches distinct time expressions, including repairs and parse errors.
+  Its compact and detailed methods use the same condition checks. Compact answers omit
+  explanations but retain all potentially overriding or applicable rules.
+
+## Geometry queries (since 0.2)
+
+- Segment vertices and query points must have finite WGS84 longitude in `-180..=180` and
+  latitude in `-90..=90`. Invalid queries return errors from `project`, `nearest` and `snap`.
+- Nearest search uses Earth-centred boxes enclosing each entire geodesic arc. Distance to
+  a box is a lower bound on chord distance, which is a lower bound on geodesic distance.
+  Candidates are examined until none can improve the requested results. There is no fixed
+  candidate cutoff, longitude wrapping issue or mean-latitude approximation.
+- Projection converges to a bracket of 1e-11 of each arc, within the 1e-9 fraction tolerance
+  used by `between`. As with all coordinate calculations, floating-point precision limits
+  accuracy on extremely short lines.
+- Bearings describe the local forward direction at the supplied position. Duplicate
+  vertices are skipped, using the following nonzero arc when available and the preceding
+  one at the end. Entirely zero length lines have bearing zero.
+- A slice with identical endpoints retains two equal coordinates, allowing it to be used
+  as a LineString or passed to `Segment::new`.
 
 ## 8. Defaults
 

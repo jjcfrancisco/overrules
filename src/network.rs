@@ -2,26 +2,20 @@
 
 use std::collections::HashMap;
 
-use geo::{BoundingRect, Point};
+use geo::{Geodesic, InterpolatePoint, Point};
 use rstar::RTree;
 use rstar::primitives::{GeomWithData, Rectangle};
 
-use crate::lr::Projection;
+use crate::lr::{Projection, validate_point};
 use crate::model::Segment;
 use crate::{Error, Result};
-
-/// How many candidate bounding boxes [`Network::nearest`] projects onto exactly.
-const NEAREST_CANDIDATES: usize = 40;
 
 /// Segments, indexed by GERS id and by space.
 #[derive(Debug)]
 pub struct Network {
     segments: Vec<Segment>,
     by_id: HashMap<String, usize>,
-    tree: RTree<GeomWithData<Rectangle<[f64; 2]>, usize>>,
-    /// cos(mean latitude): scales longitudes so that bounding-box distances are
-    /// roughly isotropic for the pre-filter.
-    kx: f64,
+    tree: RTree<GeomWithData<Rectangle<[f64; 3]>, usize>>,
 }
 
 /// A segment near a point, with the exact geodesic projection onto it.
@@ -36,12 +30,6 @@ pub struct Hit<'a> {
 impl Network {
     /// Indexes `segments`. With duplicate ids, lookups find the last.
     pub fn new(segments: Vec<Segment>) -> Self {
-        let (sum, n) = segments
-            .iter()
-            .filter_map(|s| s.geometry().0.first())
-            .fold((0.0, 0usize), |(a, n), c| (a + c.y, n + 1));
-        let mean_lat = if n == 0 { 0.0 } else { sum / n as f64 };
-        let kx = mean_lat.to_radians().cos().max(1e-6);
         let by_id = segments
             .iter()
             .enumerate()
@@ -50,22 +38,12 @@ impl Network {
         let items = segments
             .iter()
             .enumerate()
-            .filter_map(|(i, s)| {
-                let r = s.geometry().bounding_rect()?;
-                Some(GeomWithData::new(
-                    Rectangle::from_corners(
-                        [r.min().x * kx, r.min().y],
-                        [r.max().x * kx, r.max().y],
-                    ),
-                    i,
-                ))
-            })
+            .map(|(i, s)| GeomWithData::new(envelope(s), i))
             .collect();
         Self {
             segments,
             by_id,
             tree: RTree::bulk_load(items),
-            kx,
         }
     }
 
@@ -126,32 +104,97 @@ impl Network {
     }
 
     /// Up to `limit` segments nearest to `point`, closest first, by exact geodesic
-    /// distance.
-    pub fn nearest(&self, point: Point<f64>, limit: usize) -> Vec<Hit<'_>> {
-        let mut hits: Vec<Hit<'_>> = self
+    /// distance. Invalid WGS84 coordinates return an error, even when `limit` is zero.
+    pub fn nearest(&self, point: Point<f64>, limit: usize) -> Result<Vec<Hit<'_>>> {
+        validate_point(point)
+            .map_err(|e| Error::invalid("point", format!("{point:?}"), e.to_string()))?;
+        let limit = limit.min(self.len());
+        let mut hits: Vec<Hit<'_>> = Vec::with_capacity(limit);
+        if limit == 0 {
+            return Ok(hits);
+        }
+        for (candidate, distance_2) in self
             .tree
-            .nearest_neighbor_iter([point.x() * self.kx, point.y()])
-            .take(NEAREST_CANDIDATES.max(limit))
-            .map(|g| {
-                let segment = &self.segments[g.data];
-                Hit {
-                    segment,
-                    projection: segment.line().project(point),
+            .nearest_neighbor_iter_with_distance_2(geocentric(point))
+        {
+            // Distance to an enclosing box is a lower bound on chord distance, which
+            // is itself no greater than surface distance. This also works at the poles
+            // and across the date line. No fixed candidate cutoff is needed.
+            if hits.len() == limit && distance_2.sqrt() > hits[limit - 1].projection.offset_m + 1e-5
+            {
+                break;
+            }
+            let segment = &self.segments[candidate.data];
+            let projection = segment
+                .line()
+                .project(point)
+                .map_err(|e| Error::invalid("point", format!("{point:?}"), e.to_string()))?;
+            let hit = Hit {
+                segment,
+                projection,
+            };
+            let compare = |a: &Hit<'_>, b: &Hit<'_>| {
+                a.projection
+                    .offset_m
+                    .total_cmp(&b.projection.offset_m)
+                    .then_with(|| a.segment.id.cmp(&b.segment.id))
+            };
+            if hits.len() < limit {
+                hits.push(hit);
+                if hits.len() == limit {
+                    hits.sort_by(compare);
                 }
-            })
-            .collect();
-        hits.sort_by(|a, b| a.projection.offset_m.total_cmp(&b.projection.offset_m));
-        hits.truncate(limit);
-        hits
+            } else {
+                let rank = hits.partition_point(|existing| compare(existing, &hit).is_le());
+                if rank < limit {
+                    hits.insert(rank, hit);
+                    hits.pop();
+                }
+            }
+        }
+        Ok(hits)
     }
 
     /// The nearest segment to `point`.
     pub fn snap(&self, point: Point<f64>) -> Result<Hit<'_>> {
-        self.nearest(point, 1)
+        self.nearest(point, 1)?
             .into_iter()
             .next()
             .ok_or(Error::EmptyNetwork)
     }
+}
+
+/// WGS84 Earth-centred coordinates in metres. Chords cannot exceed surface distances.
+fn geocentric(point: Point<f64>) -> [f64; 3] {
+    const A: f64 = 6_378_137.0;
+    const E2: f64 = 6.694_379_990_141_316_5e-3;
+    let (sin_lat, cos_lat) = point.y().to_radians().sin_cos();
+    let (sin_lon, cos_lon) = point.x().to_radians().sin_cos();
+    let n = A / (1.0 - E2 * sin_lat * sin_lat).sqrt();
+    [
+        n * cos_lat * cos_lon,
+        n * cos_lat * sin_lon,
+        n * (1.0 - E2) * sin_lat,
+    ]
+}
+
+fn envelope(segment: &Segment) -> Rectangle<[f64; 3]> {
+    let mut min = [f64::INFINITY; 3];
+    let mut max = [f64::NEG_INFINITY; 3];
+    for (i, pair) in segment.geometry().0.windows(2).enumerate() {
+        let length = segment.line().cumulative_m()[i + 1] - segment.line().cumulative_m()[i];
+        let midpoint =
+            Geodesic.point_at_distance_between(Point(pair[0]), Point(pair[1]), length / 2.0);
+        let centre = geocentric(midpoint);
+        // Every point on this arc is at most half its length from its midpoint.
+        // Expand slightly to absorb geodesic and floating-point rounding.
+        let radius = length / 2.0 + 1e-5;
+        for axis in 0..3 {
+            min[axis] = min[axis].min(centre[axis] - radius);
+            max[axis] = max[axis].max(centre[axis] + radius);
+        }
+    }
+    Rectangle::from_corners(min, max)
 }
 
 impl FromIterator<Segment> for Network {

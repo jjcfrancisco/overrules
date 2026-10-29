@@ -64,7 +64,7 @@ impl Segment {
     /// A segment with this id and geometry and no properties yet.
     ///
     /// Fails if the geometry cannot be linearly referenced (fewer than two vertices, or
-    /// coordinates that are not finite).
+    /// coordinates outside finite WGS84 longitude/latitude bounds).
     pub fn new(id: impl Into<String>, geometry: LineString<f64>) -> Result<Self> {
         let id = id.into();
         let line = GeodesicLine::new(geometry).map_err(|source| Error::InvalidGeometry {

@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use overrules::{Access, Network, Situation};
+use overrules::{Access, Network, PreparedSegment, Situation};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -25,6 +25,45 @@ struct Case {
 fn actual(net: &Network, case: &Case) -> serde_json::Map<String, Value> {
     let segment = net.lookup(&case.segment).expect("segment in fixture");
     let a = overrules::resolve(segment, &case.situation).expect("valid situation");
+    let compact = PreparedSegment::new(segment)
+        .resolve_compact(&case.situation)
+        .expect("valid situation");
+    assert_eq!(
+        compact.access.determining, a.access.determining,
+        "{}",
+        case.name
+    );
+    assert_eq!(
+        compact.access.could_override, a.access.could_override,
+        "{}",
+        case.name
+    );
+    assert_eq!(
+        compact.speed_limit.determining, a.speed_limit.determining,
+        "{}",
+        case.name
+    );
+    assert_eq!(
+        compact.speed_limit.could_override, a.speed_limit.could_override,
+        "{}",
+        case.name
+    );
+    assert_eq!(
+        compact.prohibited_transitions.in_force, a.prohibited_transitions.in_force,
+        "{}",
+        case.name
+    );
+    assert_eq!(
+        compact.prohibited_transitions.could_apply, a.prohibited_transitions.could_apply,
+        "{}",
+        case.name
+    );
+    assert_eq!(compact.access_outcome(), a.access_outcome());
+    assert_eq!(compact.speed_limit_rule(), a.speed_limit_rule());
+    assert_eq!(
+        compact.transitions_in_force().collect::<Vec<_>>(),
+        a.transitions_in_force().collect::<Vec<_>>()
+    );
     let access = match a.access_outcome() {
         Access::Rule(t) => json!(t),
         Access::Default => Value::Null,

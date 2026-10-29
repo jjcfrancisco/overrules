@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "properties": {
+      "id": "context",
+      "access_restrictions": [
+        {"access_type": "allowed"},
+        {"access_type": "denied", "when": {"during": "PH", "heading": "forward"}}
+      ],
+      "speed_limits": [
+        {"max_speed": {"value": 50, "unit": "km/h"}},
+        {"max_speed": {"value": 30, "unit": "km/h"}, "when": {"during": "sunset-sunrise"}}
+      ],
+      "prohibited_transitions": [{
+        "sequence": [{"connector_id": "junction", "segment_id": "next"}],
+        "final_heading": "forward",
+        "when": {"during": "SH"}
+      }]
+    },
+    "geometry": {"type": "LineString", "coordinates": [[0, 0], [0.01, 0]]}
+  }]
+}

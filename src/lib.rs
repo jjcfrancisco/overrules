@@ -92,7 +92,10 @@ mod situation;
 /// [STAC catalogue](https://stac.overturemaps.org) entry (`schema:version`).
 pub const SCHEMA_VERSION: &str = "2.0.0";
 
-pub use answer::{Access, Answer, resolve};
+pub use answer::{
+    Access, Answer, CompactAnswer, CompactResolution, CompactSetResolution, PreparedSegment,
+    resolve, resolve_compact,
+};
 pub use error::{Error, ErrorKind, Result};
 pub use eval::{Resolution, SetResolution, Verdict};
 pub use model::{AccessType, Dimension, Heading, Segment, TravelMode};

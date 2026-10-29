@@ -1,0 +1,26 @@
+{
+  "description": "Missing holiday and solar context must not settle rule choices.",
+  "fixture": "../fixtures/time-context.geojson",
+  "cases": [
+    {
+      "name": "Time alone cannot decide holiday or solar rules",
+      "segment": "context",
+      "situation": {"time": "2026-12-25T18:00:00", "heading": "forward"},
+      "expect": {
+        "access": {"determining": 0, "could_override": [1], "value": "allowed"},
+        "speed_limit": {"determining": 0, "could_override": [1], "max_speed": {"value": 50, "unit": "km/h"}},
+        "prohibited_transitions": {"in_force": [], "could_apply": [0]}
+      }
+    },
+    {
+      "name": "A failed heading outweighs missing calendar context",
+      "segment": "context",
+      "situation": {"time": "2026-12-25T18:00:00", "heading": "backward"},
+      "expect": {
+        "access": {"determining": 0, "could_override": [], "value": "allowed"},
+        "speed_limit": {"determining": 0, "could_override": [1]},
+        "prohibited_transitions": {"in_force": [], "could_apply": [0]}
+      }
+    }
+  ]
+}

@@ -40,7 +40,7 @@ mod tests {
         // fraction along an L-shaped line is measurably wrong.
         let line = l_shaped();
         let corner = Point::new(-73.9818, 40.7300);
-        let geodesic = line.project(corner).at.fraction;
+        let geodesic = line.project(corner).unwrap().at.fraction;
         let planar = fraction_of(&line, corner);
         assert!((geodesic - 0.5).abs() < 0.01, "geodesic={geodesic}");
         assert!((planar - 0.5).abs() > 0.03, "planar={planar}");

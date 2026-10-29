@@ -10,14 +10,15 @@ with rule-by-rule explanations.
 For speed and access, the last matching rule wins. For prohibited turns, every matching
 rule applies. Positions along segments use WGS84 geodesic distances.
 
-To see it running, [overrules-city](https://jjcfrancisco.github.io/overrules-city/) is a
-live Lower Manhattan in the browser: every traveller asks `overrules` at each junction, and
-you can click any road to see its rules evaluated one by one
-([source](https://github.com/jjcfrancisco/overrules-city)).
+## Visual demo
+
+**[Explore Lower Manhattan in overrules-city](https://jjcfrancisco.github.io/overrules-city)**.
+Every traveller asks `overrules` at each junction. Click any road to see its rules evaluated
+one by one ([source](https://github.com/jjcfrancisco/overrules-city)).
 
 | overrules | Overture schema |
 |---|---|
-| 0.1 | 2.0.0 |
+| 0.1, 0.2 | 2.0.0 |
 
 ## Use
 
@@ -25,7 +26,7 @@ Add `overrules` to your dependencies:
 
 ```toml
 [dependencies]
-overrules = { version = "0.1", features = ["parquet"] }
+overrules = { version = "0.2", features = ["parquet"] }
 ```
 
 Overture publishes its data as GeoParquet, which needs the `parquet` feature. GeoJSON, handy
@@ -68,6 +69,8 @@ compiles to WebAssembly.
   default. No speed-limit rule means no numeric limit from the data.
 - Prohibited turns have both `in_force` and `could_apply` lists.
 - Omitted purposes and recognised statuses mean none were claimed, rather than unknown.
+- Holiday (`PH`, `SH`) and solar (`sunrise`, `sunset`, `dawn`, `dusk`) expressions stay
+  undetermined because calendar and location context are not supplied by this API.
 - Readers fail the whole read on an invalid record. `Error::InvalidRecord` identifies the
   segment and field. The [`Error` docs](https://docs.rs/overrules/latest/overrules/enum.Error.html)
   have an example.
@@ -75,6 +78,35 @@ compiles to WebAssembly.
 The supported fields, schema-version limits and interpretation decisions are documented in
 **[docs/semantics.md](docs/semantics.md)**. The [draft conformance vectors](tests/vectors)
 provide shared test cases for other implementations.
+
+## Repeated queries
+
+Keep a `PreparedSegment` to parse each distinct time expression once. Use `resolve_compact`
+when you only need rule choices and uncertainty, without explanation strings:
+
+```rust
+use overrules::{PreparedSegment, Segment, Situation, TravelMode};
+
+fn check_access(segment: &Segment) -> overrules::Result<()> {
+    let prepared = PreparedSegment::new(segment);
+    for mode in [TravelMode::Car, TravelMode::Bicycle, TravelMode::Foot] {
+        let answer = prepared.resolve_compact(&Situation::new().mode(mode))?;
+        if answer.access.is_settled() {
+            println!("{:?}", answer.access_outcome());
+            // Supply the road-class default for Access::Default.
+        }
+    }
+    Ok(())
+}
+```
+
+The same prepared segment also supports `resolve` for detailed explanations.
+
+### Migrating from 0.1
+
+`GeodesicLine::project` and `Network::nearest` now return `Result`. Use
+`line.project(point)?` and `network.nearest(point, limit)?`. Invalid coordinates are rejected
+instead of producing non-finite results or panicking. `Network::snap` already returned `Result`.
 
 ## Development
 

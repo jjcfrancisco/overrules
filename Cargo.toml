@@ -1,6 +1,6 @@
 [package]
 name = "overrules"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Francisco Jiménez <jjcfrank@gmail.com>"]
 description = "Evaluate Overture Maps transportation rules (speed limits, access restrictions, prohibited turns) with rule-by-rule explanations"
 readme = "README.md"
@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/jjcfrancisco/overrules"
 keywords = ["overture", "gis", "geospatial", "linear-referencing", "transportation"]
 categories = ["science::geo"]
-include = ["/src", "/examples", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE-*"]
+include = ["/src", "/examples", "/tests", "/docs/semantics.md", "/README.md", "/CHANGELOG.md", "/LICENSE-*"]
 
 [features]
 default = []
@@ -24,6 +24,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 geo = "0.33"
 geozero = { version = "0.15", default-features = false, features = ["with-geo", "with-wkb"], optional = true }
 opening-hours = "2"
+opening-hours-syntax = "2"
 parquet = { version = "60", default-features = false, features = ["json", "snap", "zstd"], optional = true }
 rstar = "0.13"
 serde = { version = "1", features = ["derive"] }

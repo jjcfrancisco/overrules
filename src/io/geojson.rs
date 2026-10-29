@@ -61,6 +61,9 @@ fn feature(value: Value) -> Result<Segment> {
     let Value::Object(mut f) = value else {
         return Err(Error::GeoJson("feature is not an object".to_owned()));
     };
+    if f.get("type").and_then(Value::as_str) != Some("Feature") {
+        return Err(Error::GeoJson("expected type Feature".to_owned()));
+    }
     let mut props = match f.remove("properties") {
         Some(Value::Object(p)) => p,
         Some(Value::Null) | None => Map::new(),

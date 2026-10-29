@@ -14,10 +14,12 @@
 //! Every interpretation this module has to make where the spec is silent is listed in
 //! `docs/semantics.md`.
 
+use std::collections::HashMap;
 use std::fmt;
 
-use chrono::NaiveDateTime;
+use chrono::{Datelike, NaiveDateTime};
 use opening_hours::{OpeningHours, RuleKind};
+use opening_hours_syntax::rules::day::WeekDayRange;
 use serde::Serialize;
 
 use crate::Situation;
@@ -153,18 +155,44 @@ pub struct SetResolution {
 
 /// Evaluates one rule against a situation.
 pub fn evaluate<R: Scoped + ?Sized>(index: usize, rule: &R, s: &Situation) -> RuleEvaluation {
-    let mut scopes = Vec::new();
-    if let Some(b) = rule.between() {
-        scopes.push(check_between(b, s.at));
-    }
-    if let Some(w) = rule.when() {
-        check_when(w, s, &mut scopes);
-    }
+    evaluate_with(index, rule, s, None)
+}
+
+fn evaluate_with<R: Scoped + ?Sized>(
+    index: usize,
+    rule: &R,
+    s: &Situation,
+    times: Option<&TimeCache>,
+) -> RuleEvaluation {
+    let checks = collect_checks(rule, s, times, true);
     RuleEvaluation {
         index,
-        verdict: Verdict::all(scopes.iter().map(|c| c.verdict)),
-        scopes,
+        verdict: checks.verdict,
+        scopes: checks.scopes.unwrap_or_default(),
     }
+}
+
+pub(crate) fn verdict<R: Scoped>(rule: &R, s: &Situation, times: &TimeCache) -> Verdict {
+    collect_checks(rule, s, Some(times), false).verdict
+}
+
+fn collect_checks<R: Scoped + ?Sized>(
+    rule: &R,
+    s: &Situation,
+    times: Option<&TimeCache>,
+    explain: bool,
+) -> Checks {
+    let mut checks = Checks {
+        verdict: Verdict::Match,
+        scopes: explain.then(Vec::new),
+    };
+    if let Some(b) = rule.between() {
+        check_between(b, s.at, &mut checks);
+    }
+    if let Some(w) = rule.when() {
+        check_when(w, s, times, &mut checks);
+    }
+    checks
 }
 
 /// Resolves a single-valued rule list (access, speed limits): the last match wins.
@@ -172,10 +200,18 @@ pub fn evaluate<R: Scoped + ?Sized>(index: usize, rule: &R, s: &Situation) -> Ru
 /// This low-level function expects a valid situation. Call [`Situation::validate`] first,
 /// or use [`crate::resolve`], which validates before evaluating a segment's rules.
 pub fn last_match<R: Scoped>(rules: &[R], s: &Situation) -> Resolution {
+    last_match_with(rules, s, None)
+}
+
+pub(crate) fn last_match_with<R: Scoped>(
+    rules: &[R],
+    s: &Situation,
+    times: Option<&TimeCache>,
+) -> Resolution {
     let rules: Vec<RuleEvaluation> = rules
         .iter()
         .enumerate()
-        .map(|(i, r)| evaluate(i, r, s))
+        .map(|(i, r)| evaluate_with(i, r, s, times))
         .collect();
     let determining = rules
         .iter()
@@ -198,10 +234,18 @@ pub fn last_match<R: Scoped>(rules: &[R], s: &Situation) -> Resolution {
 ///
 /// Like [`last_match`], this expects a valid situation; it does not validate the facts.
 pub fn all_matches<R: Scoped>(rules: &[R], s: &Situation) -> SetResolution {
+    all_matches_with(rules, s, None)
+}
+
+pub(crate) fn all_matches_with<R: Scoped>(
+    rules: &[R],
+    s: &Situation,
+    times: Option<&TimeCache>,
+) -> SetResolution {
     let rules: Vec<RuleEvaluation> = rules
         .iter()
         .enumerate()
-        .map(|(i, r)| evaluate(i, r, s))
+        .map(|(i, r)| evaluate_with(i, r, s, times))
         .collect();
     let with = |v| {
         rules
@@ -217,105 +261,189 @@ pub fn all_matches<R: Scoped>(rules: &[R], s: &Situation) -> SetResolution {
     }
 }
 
-fn check(
-    scope: Scope,
-    requires: impl Into<String>,
+struct Checks {
     verdict: Verdict,
-    because: impl Into<String>,
-) -> ScopeCheck {
-    ScopeCheck {
-        scope,
-        requires: requires.into(),
-        verdict,
-        because: because.into(),
+    scopes: Option<Vec<ScopeCheck>>,
+}
+
+impl Checks {
+    fn push(
+        &mut self,
+        scope: Scope,
+        verdict: Verdict,
+        requires: impl FnOnce() -> String,
+        because: impl FnOnce() -> String,
+    ) {
+        self.verdict = Verdict::all([self.verdict, verdict]);
+        if let Some(scopes) = &mut self.scopes {
+            scopes.push(ScopeCheck {
+                scope,
+                verdict,
+                requires: requires(),
+                because: because(),
+            });
+        }
     }
 }
 
-fn check_when(w: &When, s: &Situation, out: &mut Vec<ScopeCheck>) {
+fn check_when(w: &When, s: &Situation, times: Option<&TimeCache>, out: &mut Checks) {
     if let Some(h) = w.heading {
-        out.push(check_heading(h, s.heading));
+        check_heading(h, s.heading, out);
     }
     if let Some(expr) = &w.during {
-        out.push(check_during(expr, s.time));
+        check_during(expr, s.time, times, out);
     }
     if let Some(modes) = &w.mode {
-        out.push(check_mode(modes, s.mode.as_ref()));
+        check_mode(modes, s.mode.as_ref(), out);
     }
     if let Some(req) = &w.using {
-        out.push(check_claims(Scope::Using, req, &s.using));
+        check_claims(Scope::Using, req, &s.using, out);
     }
     if let Some(req) = &w.recognized {
-        out.push(check_claims(Scope::Recognized, req, &s.recognized));
+        check_claims(Scope::Recognized, req, &s.recognized, out);
     }
     for v in w.vehicle.iter().flatten() {
-        out.push(check_vehicle(v, s));
+        check_vehicle(v, s, out);
     }
 }
 
-fn check_between(b: &Between, at: Option<f64>) -> ScopeCheck {
-    let (lo, hi) = b.bounds();
-    let requires = format!("[{lo:.3}, {hi:.3}]");
-    let note = if b.is_inverted() {
-        format!(" (range written inverted as {b})")
-    } else {
-        String::new()
-    };
-    match at {
-        None => check(
-            Scope::Between,
-            requires,
-            Verdict::Undetermined,
-            "no position given",
-        ),
-        Some(f) if b.contains(f) => check(
-            Scope::Between,
-            requires,
-            Verdict::Match,
-            format!("position {f:.3} is inside{note}"),
-        ),
-        Some(f) => check(
-            Scope::Between,
-            requires,
-            Verdict::NoMatch,
-            format!("position {f:.3} is outside{note}"),
-        ),
-    }
-}
-
-fn check_heading(required: Heading, have: Option<Heading>) -> ScopeCheck {
-    let (verdict, because) = match have {
-        None => (Verdict::Undetermined, "no heading given".to_owned()),
-        Some(h) if h == required => (Verdict::Match, format!("travelling {h}")),
-        Some(h) => (Verdict::NoMatch, format!("travelling {h}")),
-    };
-    check(Scope::Heading, required.as_str(), verdict, because)
-}
-
-fn check_during(expr: &str, time: Option<NaiveDateTime>) -> ScopeCheck {
-    let (verdict, because) = match time {
-        None => (Verdict::Undetermined, "no time of travel given".to_owned()),
-        Some(t) => match parse_opening_hours(expr) {
-            Err(e) => (
-                Verdict::Undetermined,
-                format!("cannot parse opening_hours: {e}"),
-            ),
-            Ok((oh, repaired)) => {
-                let when = t.format("%a %Y-%m-%d %H:%M");
-                let note = repaired
-                    .map(|r| format!(" (read \"{expr}\" as \"{r}\")"))
-                    .unwrap_or_default();
-                match oh.state(t).0 {
-                    RuleKind::Open => (Verdict::Match, format!("{when} is inside{note}")),
-                    RuleKind::Closed => (Verdict::NoMatch, format!("{when} is outside{note}")),
-                    RuleKind::Unknown => (
-                        Verdict::Undetermined,
-                        format!("opening_hours evaluates to 'unknown'{note}"),
-                    ),
-                }
+fn check_between(b: &Between, at: Option<f64>, out: &mut Checks) {
+    let verdict = at.map_or(Verdict::Undetermined, |f| yes_no(b.contains(f)));
+    out.push(
+        Scope::Between,
+        verdict,
+        || {
+            let (lo, hi) = b.bounds();
+            format!("[{lo:.3}, {hi:.3}]")
+        },
+        || match at {
+            None => "no position given".into(),
+            Some(f) => {
+                let note = if b.is_inverted() {
+                    format!(" (range written inverted as {b})")
+                } else {
+                    String::new()
+                };
+                let place = if verdict == Verdict::Match {
+                    "inside"
+                } else {
+                    "outside"
+                };
+                format!("position {f:.3} is {place}{note}")
             }
         },
+    );
+}
+
+fn check_heading(required: Heading, have: Option<Heading>, out: &mut Checks) {
+    let verdict = have.map_or(Verdict::Undetermined, |h| yes_no(h == required));
+    out.push(
+        Scope::Heading,
+        verdict,
+        || required.to_string(),
+        || have.map_or_else(|| "no heading given".into(), |h| format!("travelling {h}")),
+    );
+}
+
+pub(crate) type TimeCache = HashMap<String, PreparedTime>;
+
+#[derive(Debug, Clone)]
+pub(crate) struct PreparedTime {
+    parsed: Result<(OpeningHours, Option<String>), String>,
+    missing_context: Option<&'static str>,
+}
+
+impl PreparedTime {
+    pub(crate) fn new(expr: &str) -> Self {
+        let parsed = parse_opening_hours(expr);
+        let missing_context = parsed.as_ref().ok().and_then(|(oh, _)| {
+            let expression = oh.get_expression();
+            if expression.rules.iter().any(|r| {
+                r.day_selector
+                    .weekday
+                    .iter()
+                    .any(|d| matches!(d, WeekDayRange::Holiday { .. }))
+            }) {
+                Some("holiday calendar not provided")
+            } else if expression.rules.iter().any(|r| {
+                r.time_selector.spans.iter().any(|s| {
+                    s.range.start.as_time_event().is_some() || s.range.end.as_time_event().is_some()
+                })
+            }) {
+                Some("location and time zone for solar events not provided")
+            } else {
+                None
+            }
+        });
+        Self {
+            parsed,
+            missing_context,
+        }
+    }
+}
+
+fn check_during(
+    expr: &str,
+    time: Option<NaiveDateTime>,
+    times: Option<&TimeCache>,
+    out: &mut Checks,
+) {
+    let Some(t) = time else {
+        out.push(
+            Scope::During,
+            Verdict::Undetermined,
+            || expr.into(),
+            || "no time of travel given".into(),
+        );
+        return;
     };
-    check(Scope::During, expr, verdict, because)
+    let uncached;
+    let prepared = if let Some(prepared) = times.and_then(|cache| cache.get(expr)) {
+        prepared
+    } else {
+        uncached = PreparedTime::new(expr);
+        &uncached
+    };
+    let supported_date = (1900..10_000).contains(&t.year());
+    let verdict = match &prepared.parsed {
+        Ok((oh, _)) if prepared.missing_context.is_none() && supported_date => {
+            match oh.state(t).0 {
+                RuleKind::Open => Verdict::Match,
+                RuleKind::Closed => Verdict::NoMatch,
+                RuleKind::Unknown => Verdict::Undetermined,
+            }
+        }
+        _ => Verdict::Undetermined,
+    };
+    out.push(
+        Scope::During,
+        verdict,
+        || expr.into(),
+        || {
+            if let Err(e) = &prepared.parsed {
+                return format!("cannot parse opening_hours: {e}");
+            }
+            let note = prepared
+                .parsed
+                .as_ref()
+                .ok()
+                .and_then(|(_, r)| r.as_ref())
+                .map(|r| format!(" (read \"{expr}\" as \"{r}\")"))
+                .unwrap_or_default();
+            if let Some(reason) = prepared.missing_context {
+                return format!("{reason}{note}");
+            }
+            if !supported_date {
+                return "time is outside supported years 1900..=9999".into();
+            }
+            let when = t.format("%a %Y-%m-%d %H:%M");
+            match verdict {
+                Verdict::Match => format!("{when} is inside{note}"),
+                Verdict::NoMatch => format!("{when} is outside{note}"),
+                Verdict::Undetermined => format!("opening_hours evaluates to 'unknown'{note}"),
+            }
+        },
+    );
 }
 
 /// Parses an `opening_hours` expression. If it does not parse as written, tries once more
@@ -373,73 +501,92 @@ fn repair_opening_hours(expr: &str) -> Option<String> {
     changed.then_some(out)
 }
 
-fn check_mode(modes: &[TravelMode], have: Option<&TravelMode>) -> ScopeCheck {
-    let requires = format!("[{}]", join(modes));
-    let (verdict, because) = match have {
-        None => (Verdict::Undetermined, "no travel mode given".to_owned()),
-        Some(m) => {
-            if let Some(hit) = modes.iter().find(|r| m.is_within(r)) {
+fn check_mode(modes: &[TravelMode], have: Option<&TravelMode>, out: &mut Checks) {
+    let hit = have.and_then(|m| modes.iter().find(|r| m.is_within(r)));
+    let narrower = have.and_then(|m| modes.iter().find(|r| r.is_within(m)));
+    let verdict = if hit.is_some() {
+        Verdict::Match
+    } else if have.is_none() || narrower.is_some() {
+        Verdict::Undetermined
+    } else {
+        Verdict::NoMatch
+    };
+    out.push(
+        Scope::Mode,
+        verdict,
+        || format!("[{}]", join(modes)),
+        || {
+            let Some(m) = have else {
+                return "no travel mode given".into();
+            };
+            if let Some(hit) = hit {
                 let how = if hit == m {
-                    "exactly".to_owned()
+                    "exactly".into()
                 } else {
                     format!("{m} ⊂ {hit}")
                 };
-                (Verdict::Match, format!("{m} is covered ({how})"))
-            } else if let Some(narrower) = modes.iter().find(|r| r.is_within(m)) {
-                // The traveller gave a group (motor_vehicle); the rule names one of its
-                // members (car). Whether it applies depends on which member they are.
-                (
-                    Verdict::Undetermined,
-                    format!("rule names {narrower}, narrower than {m}; give a more specific mode"),
-                )
+                format!("{m} is covered ({how})")
+            } else if let Some(narrower) = narrower {
+                format!("rule names {narrower}, narrower than {m}; give a more specific mode")
             } else {
-                (Verdict::NoMatch, format!("{m} is not covered"))
+                format!("{m} is not covered")
             }
-        }
-    };
-    check(Scope::Mode, requires, verdict, because)
+        },
+    );
 }
 
 /// `using` and `recognized` are claims: a traveller who declares none holds none.
-fn check_claims(scope: Scope, required: &[String], have: &[String]) -> ScopeCheck {
-    let requires = format!("[{}]", required.join(", "));
-    let (verdict, because) = if let Some(hit) = required.iter().find(|r| have.contains(r)) {
-        (Verdict::Match, format!("traveller declared {hit}"))
-    } else if have.is_empty() {
-        (Verdict::NoMatch, "traveller declared none".to_owned())
-    } else {
-        (
-            Verdict::NoMatch,
-            format!("traveller declared [{}]", have.join(", ")),
-        )
-    };
-    check(scope, requires, verdict, because)
+fn check_claims(scope: Scope, required: &[String], have: &[String], out: &mut Checks) {
+    let hit = required.iter().find(|r| have.contains(r));
+    out.push(
+        scope,
+        yes_no(hit.is_some()),
+        || format!("[{}]", required.join(", ")),
+        || {
+            if let Some(hit) = hit {
+                format!("traveller declared {hit}")
+            } else if have.is_empty() {
+                "traveller declared none".into()
+            } else {
+                format!("traveller declared [{}]", have.join(", "))
+            }
+        },
+    );
 }
 
-fn check_vehicle(v: &VehicleSelector, s: &Situation) -> ScopeCheck {
-    let requires = v.to_string();
-    let (verdict, because) = match (v.canonical_value(), s.vehicle.get(&v.dimension)) {
-        (Err(reason), _) => (Verdict::Undetermined, reason),
-        (Ok(_), None) => (
-            Verdict::Undetermined,
-            format!("no vehicle {} given", v.dimension),
-        ),
-        (Ok(threshold), Some(&x)) => {
-            let unit = v
-                .dimension
-                .quantity()
-                .canonical_unit()
-                .map(|u| format!(" {u}"))
-                .unwrap_or_default();
-            let verdict = if v.comparison.holds(x, threshold) {
-                Verdict::Match
-            } else {
-                Verdict::NoMatch
-            };
-            (verdict, format!("vehicle {} is {x}{unit}", v.dimension))
-        }
+fn check_vehicle(v: &VehicleSelector, s: &Situation, out: &mut Checks) {
+    let threshold = v.canonical_value();
+    let have = s.vehicle.get(&v.dimension);
+    let verdict = match (&threshold, have) {
+        (Ok(threshold), Some(&x)) => yes_no(v.comparison.holds(x, *threshold)),
+        _ => Verdict::Undetermined,
     };
-    check(Scope::Vehicle, requires, verdict, because)
+    out.push(
+        Scope::Vehicle,
+        verdict,
+        || v.to_string(),
+        || match (threshold, have) {
+            (Err(reason), _) => reason,
+            (Ok(_), None) => format!("no vehicle {} given", v.dimension),
+            (Ok(_), Some(&x)) => {
+                let unit = v
+                    .dimension
+                    .quantity()
+                    .canonical_unit()
+                    .map(|u| format!(" {u}"))
+                    .unwrap_or_default();
+                format!("vehicle {} is {x}{unit}", v.dimension)
+            }
+        },
+    );
+}
+
+fn yes_no(value: bool) -> Verdict {
+    if value {
+        Verdict::Match
+    } else {
+        Verdict::NoMatch
+    }
 }
 
 fn join<T: fmt::Display>(items: &[T]) -> String {

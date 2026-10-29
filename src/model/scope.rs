@@ -162,7 +162,7 @@ impl TravelMode {
 
     /// Whether this mode is `other` or one of its descendants (`car` is within `vehicle`).
     pub fn is_within(&self, other: &Self) -> bool {
-        self.lineage().contains(other)
+        self == other || self.parent().is_some_and(|parent| parent.is_within(other))
     }
 }
 
